@@ -27,7 +27,7 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 DEBUG = True
 
 #ALLOWED_HOSTS = ['ems-server-530056698.us-central1.run.app', 'ems-webapp-530056698.us-central1.run.app']
-ALLOWED_HOSTS = ['*','sabac-server-382170497486.us-central1.run.app', 'sabac-webapp-382170497486.us-central1.run.app']
+ALLOWED_HOSTS = ['sabac-server-382170497486.us-central1.run.app', 'sabac-webapp-382170497486.us-central1.run.app']
 
 CSRF_TRUSTED_ORIGINS = ['https://sabac-webapp-382170497486.us-central1.run.app/']
 
