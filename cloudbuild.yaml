@@ -6,13 +6,13 @@ steps:
   # Step 2: Change directory to the repository
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'sabac_server'
-    args: ['build', '-t', 'gcr.io/myprojectsabac-435411/sabac_server', '.']
+    args: ['build', '-t', 'gcr.io/vertex-model-training/sabac_server', '.']
 
   
   # Step 3: Push the Docker image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'sabac_server'
-    args: ['push', 'gcr.io/myprojectsabac-435411/sabac_server']
+    args: ['push', 'gcr.io/vertex-model-training/sabac_server']
   
   # Step 4: Deploy the Docker image to Google Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -22,7 +22,7 @@ steps:
       - 'deploy'
       - 'sabac-server'
       - '--image'
-      - 'gcr.io/myprojectsabac-435411/sabac_server'
+      - 'gcr.io/vertex-model-training/sabac_server'
       - '--platform'
       - 'managed'
       - '--region'
