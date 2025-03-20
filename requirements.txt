@@ -1,9 +1,9 @@
-Django==4.2.19
+Django==4.1.4
+gunicorn==19.9.0
+django-cors-headers
 daphne
 channels
-gunicorn==19.9.0
-django-cors-headers==4.7.0
-djangorestframework==3.15.2
-djangorestframework_simplejwt==5.5.0
-drf-extra-fields==3.7.0
+djangorestframework
+djangorestframework_simplejwt
+drf-extra-fields
 pillow
