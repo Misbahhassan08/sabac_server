@@ -13,4 +13,4 @@ ENV PORT 8080
 
 COPY . /app/
 
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 ems_project.wsgi:application
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 sabac_project.wsgi:application
