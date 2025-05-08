@@ -1,5 +1,4 @@
 Django==4.1.4
-gunicorn==19.9.0
 django-cors-headers
 daphne
 channels
@@ -7,3 +6,17 @@ djangorestframework
 djangorestframework_simplejwt
 drf-extra-fields
 pillow
+asgiref
+PyJWT
+pytz
+sqlparse
+psycopg2-binary
+gunicorn
+requests
+python-dotenv
+pymysql
+mysqlclient
+django-environ
+google-cloud-secret-manager
+django-storages
+google-auth
