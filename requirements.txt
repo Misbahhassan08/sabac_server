@@ -7,3 +7,14 @@ djangorestframework
 djangorestframework_simplejwt
 drf-extra-fields
 pillow
+pytz
+sqlparse
+psycopg2-binary
+requests
+python-dotenv
+pymysql
+mysqlclient
+django-environ
+google-cloud-secret-manager
+django-storages
+google-auth
