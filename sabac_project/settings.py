@@ -26,10 +26,8 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-#ALLOWED_HOSTS = ['ems-server-530056698.us-central1.run.app', 'ems-webapp-530056698.us-central1.run.app']
-ALLOWED_HOSTS = ['*','0.0.0.0', 'sabac-server-382170497486.us-central1.run.app', 'sabac-webapp-382170497486.us-central1.run.app']
+ALLOWED_HOSTS = ['*']
 
-CSRF_TRUSTED_ORIGINS = ['*','https://sabac-webapp-382170497486.us-central1.run.app']
 
 # Application definition
 
@@ -39,10 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "daphne",
-    # "django.contrib.staticfiles",
     "rest_framework",
-    "channels",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     'django.contrib.staticfiles',  # Make sure this is listed after corsheaders
     'rest_framework_simplejwt',
@@ -73,7 +69,7 @@ ROOT_URLCONF = "sabac_project.urls"
 CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "*"
+    "http://localhost:3000"
       
 ]
 
