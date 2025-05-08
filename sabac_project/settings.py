@@ -26,7 +26,8 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*','sabac-server-382170497486.us-central1.run.app', 'sabac-webapp-382170497486.us-central1.run.app']
+CSRF_TRUSTED_ORIGINS = ['https://sabac-webapp-382170497486.us-central1.run.app']
 
 
 # Application definition
@@ -110,10 +111,26 @@ WSGI_APPLICATION = "sabac_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
+# Get environment variables (these should be set in Cloud Run)
+INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
+DB_USER = "misbah"
+DB_PASS = "?5@1D9:lA_ex6p(%"
+DB_NAME = "testdb"
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASS,
+        'HOST': f'/cloudsql/{INSTANCE_CONNECTION_NAME}',  # This tells Django to connect via UNIX socket
+        'PORT': '3306',
     }
 }
 

@@ -237,7 +237,7 @@ class Bidding(models.Model):
                                'role': 'dealer'}, related_name='bids')
     saler_car = models.ForeignKey(
         saler_car_details, on_delete=models.CASCADE, related_name='bids')
-    bid_amount = models.DecimalField(max_digits=100, decimal_places=2)
+    bid_amount = models.DecimalField(max_digits=65, decimal_places=2)
     bid_date = models.DateField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
