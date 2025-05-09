@@ -138,8 +138,8 @@ DATABASES = {
         'NAME': DB_NAME,
         'USER': DB_USER,
         'PASSWORD': DB_PASS,
-        'HOST': f'/cloudsql/{INSTANCE_CONNECTION_NAME}'  # This tells Django to connect via UNIX socket
-        #'PORT': '3306',
+        'HOST': f'/cloudsql/{INSTANCE_CONNECTION_NAME}',  # This tells Django to connect via UNIX socket
+        'PORT': '3307',
     }
 }
 
