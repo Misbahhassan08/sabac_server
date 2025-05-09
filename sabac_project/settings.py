@@ -116,8 +116,8 @@ WSGI_APPLICATION = "sabac_project.wsgi.application"
 
 # Get environment variables (these should be set in Cloud Run)
 INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
-DB_USER = "root"
-DB_PASS = ";.sEYlc3Re-JU>ex"
+DB_USER = "misbah"
+DB_PASS = "?5@1D9:lA_ex6p(%"
 DB_NAME = "testdb"
 DATABASES = {
     'default': {
