@@ -26,8 +26,8 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','sabac-server-382170497486.us-central1.run.app', 'sabac-webapp-382170497486.us-central1.run.app']
-CSRF_TRUSTED_ORIGINS = ['https://sabac-webapp-382170497486.us-central1.run.app']
+ALLOWED_HOSTS = ['*','sabac-server-530056698.us-central1.run.app']
+CSRF_TRUSTED_ORIGINS = ['https://*']
 
 
 # Application definition
@@ -116,8 +116,8 @@ WSGI_APPLICATION = "sabac_project.wsgi.application"
 
 # Get environment variables (these should be set in Cloud Run)
 INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
-DB_USER = "misbah"
-DB_PASS = "?5@1D9:lA_ex6p(%"
+DB_USER = "root"
+DB_PASS = ";.sEYlc3Re-JU>ex"
 DB_NAME = "testdb"
 DATABASES = {
     'default': {
