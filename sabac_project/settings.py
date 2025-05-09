@@ -81,7 +81,7 @@ REST_FRAMEWORK = {
     ],
 }
 
-#AUTH_USER_MODEL = 'sabac.User'
+AUTH_USER_MODEL = 'sabac.User'
 
 ROOT_URLCONF = "sabac_project.urls"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
@@ -130,7 +130,7 @@ WSGI_APPLICATION = "sabac_project.wsgi.application"
 INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
 DB_USER = "misbah"
 DB_PASS = "?5@1D9:lA_ex6p(%"
-DB_NAME = "testdb"
+DB_NAME = "emsdb2"
 
 DATABASES = {
     'default': {
