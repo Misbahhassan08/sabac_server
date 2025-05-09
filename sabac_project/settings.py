@@ -130,7 +130,7 @@ WSGI_APPLICATION = "sabac_project.wsgi.application"
 INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
 DB_USER = "misbah"
 DB_PASS = "?5@1D9:lA_ex6p(%"
-DB_NAME = "emsdb1"
+DB_NAME = "testdb"
 
 DATABASES = {
     'default': {
@@ -139,7 +139,7 @@ DATABASES = {
         'USER': DB_USER,
         'PASSWORD': DB_PASS,
         'HOST': f'/cloudsql/{INSTANCE_CONNECTION_NAME}',  # This tells Django to connect via UNIX socket
-        'PORT': '3307',
+        'PORT': '3306',
     }
 }
 
