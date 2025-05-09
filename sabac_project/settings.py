@@ -81,9 +81,21 @@ REST_FRAMEWORK = {
     ],
 }
 
-AUTH_USER_MODEL = 'sabac.User'
+#AUTH_USER_MODEL = 'sabac.User'
 
 ROOT_URLCONF = "sabac_project.urls"
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 300  
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=59),  
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),   
+    "ROTATE_REFRESH_TOKENS": True,          
+    "BLACKLIST_AFTER_ROTATION": True,     
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": "123456789",      
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
 TEMPLATES = [
     {
@@ -119,6 +131,7 @@ INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: pr
 DB_USER = "misbah"
 DB_PASS = "?5@1D9:lA_ex6p(%"
 DB_NAME = "testdb"
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -173,12 +186,4 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=59),  
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),   
-    "ROTATE_REFRESH_TOKENS": True,          
-    "BLACKLIST_AFTER_ROTATION": True,     
-    "ALGORITHM": "HS256",
-    "SIGNING_KEY": "123456789",      
-    "AUTH_HEADER_TYPES": ("Bearer",),
-}
+
