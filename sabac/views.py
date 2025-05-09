@@ -1,5 +1,7 @@
 from django.db.models.functions import TruncWeek, TruncDay, TruncMonth
+# from sabac.services.user_migration import migrate_guest_to_user
 from django.db.models import Count
+from django.contrib.auth import get_user_model
 from testcase import my_default_json, merge_json
 from time import timezone
 from django.utils.timezone import localtime, now
@@ -332,8 +334,9 @@ def reject_inspection(request, report_id):
         {"message": "Car is rejected by admin"}, status=status.HTTP_201_CREATED
     )
 
-
 # get the list of all cars by sellers TOTAL CARS IN DATABSE NOT USED
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_cars_list(request):
@@ -342,8 +345,9 @@ def get_cars_list(request):
     serializer = SalerCarDetailsSerializer(cars, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 # ADMIN REGISTER THE DEALER AND INSPECTOR
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def register(request):
@@ -363,8 +367,9 @@ def register(request):
         return Response(serializer.data)
     return Response(serializer.errors)
 
-
 # ADMIN UPDATE THE SALER & INSPECTOR
+
+
 @api_view(["PUT", "PATCH"])
 @permission_classes([IsAuthenticated])
 def edit_user(request):
@@ -433,8 +438,9 @@ def edit_user(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-
 # ADMIN DELETE THE USERS
+
+
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_user(request):
@@ -511,8 +517,9 @@ def usersList(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
 # list of dealrs
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dealersList(request):
@@ -559,8 +566,9 @@ def dealersList(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
 # list of inspectors
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def inspectorsList(request):
@@ -607,8 +615,9 @@ def inspectorsList(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
 # list of admins
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def adminList(request):
@@ -655,8 +664,9 @@ def adminList(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-
 # count of users
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_count(request):
@@ -682,8 +692,9 @@ def get_user_count(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 # count of cars
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_cars_count(request):
@@ -719,8 +730,9 @@ def get_cars_count(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 # car posting graph daily weekly
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def carsStats(request):
@@ -777,32 +789,32 @@ def carsStats(request):
         count=Count('saler_car_id')).order_by('period')
     return Response(data, status=status.HTTP_200_OK)
 
-
 # ACCEPT BID
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def accept_bid(request, bid_id):
     user = request.user
     logger.info(f"User {user.username} is attempting to accept bid {bid_id}")
 
+    if user.role != "admin":
+        return Response(
+            {"message": "Only admins can accept bids"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     try:
         bid = Bidding.objects.get(id=bid_id)
-
     except Bidding.DoesNotExist:
         logger.error(f"Bid with id {bid_id} not found.")
         return Response(
-            {"Message": "Bid not found"}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if bid.saler_car.user != user:
-        return Response(
-            {"Message": "you are not authorized to accept bid"},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"message": "Bid not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
     if bid.status != "pending":
         return Response(
-            {"Message": "Bid already processed"}, status=status.HTTP_400_BAD_REQUEST
+            {"message": "Bid already processed"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     bid.is_accepted = True
@@ -814,18 +826,22 @@ def accept_bid(request, bid_id):
     car.winner_dealer = bid.dealer
     car.save()
 
+    # Reject other bids
     Bidding.objects.filter(saler_car=car).exclude(
         id=bid_id).update(status="rejected")
 
+    # Notify dealer
     Notification.objects.create(
         recipient=bid.dealer,
-        message=f"Your bid of {bid.bid_amount} on {car.company} {car.car_name} {car.model}  has been accepted.",
-        saler_car=bid.saler_car,
+        message=f"Your bid of {bid.bid_amount} on {car.company} {car.car_name} {car.year} has been accepted.",
+        saler_car=car,
+        bid=bid,
         category="bid_accepted",
     )
 
     return Response(
-        {"message": "Bid accepted and car marked as sold"}, status=status.HTTP_200_OK
+        {"message": "Bid accepted and car marked as sold"},
+        status=status.HTTP_200_OK,
     )
 
 
@@ -836,19 +852,18 @@ def reject_bid(request, bid_id):
     user = request.user
     logger.info(f"User {user.username} is attempting to reject bid {bid_id}")
 
-    bid = get_object_or_404(Bidding, id=bid_id)
-
-    if bid.saler_car.user != user:
-        logger.warning(
-            f"Unauthorized bid rejection attempt by user {user.username}")
+    if user.role != "admin":
         return Response(
-            {"message": "You are not authorized to reject this bid"},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"message": "Only admins can reject bids"},
+            status=status.HTTP_403_FORBIDDEN,
         )
+
+    bid = get_object_or_404(Bidding, id=bid_id)
 
     if bid.status != "pending":
         logger.info(
-            f"Bid {bid_id} has already been processed with status {bid.status}")
+            f"Bid {bid_id} has already been processed with status {bid.status}"
+        )
         return Response(
             {"message": "Bid has already been processed"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -862,17 +877,18 @@ def reject_bid(request, bid_id):
 
     Notification.objects.create(
         recipient=bid.dealer,
-        message=f"Your bid of {bid.bid_amount} on {car.company} {car.car_name} {car.model} has been rejected.",
+        message=f"Your bid of {bid.bid_amount} on {car.company} {car.car_name} {car.year} has been rejected.",
         saler_car=car,
         bid=bid,
         category="bid_rejected",
     )
 
-    logger.info(f"Bid {bid_id} rejected successfully by user {user.username}")
+    logger.info(f"Bid {bid_id} rejected successfully by admin {user.username}")
     return Response({"message": "Bid rejected"}, status=status.HTTP_200_OK)
 
+# FETCH BID NOTIFICATION FOR admin not used
 
-# FETCH BID NOTIFICATION FOR admin
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def bid_notification(request):
@@ -898,20 +914,43 @@ def bid_notification(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+# FETCH BID NOTIFICATION FOR admin
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def bid_notification_for_seller(request):
+    user = request.user
+    if user.role != "admin":
+        return Response(
+            {"message": "Only admin can view notifications"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    try:
+        unread_notifications = Notification.objects.filter(
+            recipient=user, category="new_bid", is_read=False
+        ).order_by("-created_at")
+        serializer = NotificationSerializer(unread_notifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response(
+            {"message": f"Error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_bid_notifications_as_read(request):
     user = request.user
 
-    if user.role != "saler":
+    if user.role != "admin":
         return Response(
-            {"message": "Only sellers can update notifications"},
+            {"message": "Only admins can update bid notifications"},
             status=status.HTTP_403_FORBIDDEN,
         )
 
     try:
-
         notification_ids = request.data.get("notification_ids", [])
 
         if not notification_ids:
@@ -919,12 +958,14 @@ def mark_bid_notifications_as_read(request):
                 {"message": "No notifications to mark as read"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        Notification.objects.filter(id__in=notification_ids, recipient=user).update(
-            is_read=True
-        )
+
+        updated_count = Notification.objects.filter(
+            id__in=notification_ids, recipient=user, category="new_bid"
+        ).update(is_read=True)
 
         return Response(
-            {"message": "Notifications marked as read"}, status=status.HTTP_200_OK
+            {"message": f"{updated_count} notifications marked as read"},
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
@@ -1024,9 +1065,7 @@ def get_all_sold_cars(request):
 def add_car_details(request):
     try:
         user = request.user
-        print("owner:", user)
         data = request.data.copy()
-        print("car data:", data)
         data["user"] = user.id
         data["added_by"] = "seller"
 
@@ -1045,8 +1084,8 @@ def add_car_details(request):
                 notification = Notification.objects.create(
                     recipient=inspector,
                     message=(
-                        f"New Car: {car_details.car_name} ({car_details.year})\n"
-                        f"Added by: {user.username} (Phone: {saler_phone_number})\n"
+                        f"New Car: {car_details.car_name} ({car_details.year})"
+                        f"Added by: {user.username} (Phone: {saler_phone_number})"
                         f"Inspection Scheduled: {inspection_date} at {inspection_time}"
                     ),
                     category="saler_car_details",
@@ -1069,15 +1108,13 @@ def add_car_details(request):
 
  # SALER SELECTS SLOTS
 
+
 # seller select slot
-
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def select_slot(request):
     user = request.user
     data = request.data
-    print("Selected:", data)
 
     required_fields = ["saler_car_id", "availability_id", "time_slot"]
     for field in required_fields:
@@ -1401,12 +1438,14 @@ def delete_saler(request):
 
 
 # saler registeR view
+# saler_register view
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def saler_register(request):
     data = request.data
 
     try:
+        # Create the new user
         user = User.objects.create_user(
             username=data.get("username"),
             first_name=data.get("first_name"),
@@ -1416,6 +1455,13 @@ def saler_register(request):
             phone_number=data.get("phone_number"),
             role="saler",
         )
+
+        # Migrate any guest-related data to this new user
+        # migrate_guest_to_user(
+        #     guest_email=user.email,
+        #     guest_number=user.phone_number,
+        #     new_user=user
+        # )
 
         return Response(
             {
@@ -1434,8 +1480,9 @@ def saler_register(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
 # dealer register
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def dealer_register(request):
@@ -2218,8 +2265,19 @@ def post_inspection_report_mob(request):
             category="Your_car_inspected",
             saler_car=car,
         )
-        # Notify Dealers and Admins (keep your existing code)
-        # ...
+        # Notify Dealer
+        Notification.objects.create(
+            recipient=car.user,
+            message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+            category="dealer_car_inspected",
+            saler_car=car,
+        )
+        Notification.objects.create(
+            recipient=car.user,
+            message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+            category="admin_car_inspected",
+            saler_car=car,
+        )
         return Response(
             {
                 "message": "Inspection report submitted successfully.",
@@ -2604,22 +2662,22 @@ def get_inspection_notifications(request):
     if user.role == "saler":
         notifications = Notification.objects.filter(
             recipient=user,
-            category="car_inspected",
+            category="Your_car_inspected",
             saler_car__user=user,
         )
 
     # For Dealer
     elif user.role == "dealer":
         notifications = Notification.objects.filter(
-            recepient=user,
-            category="car_inspected",
+            recipient=user,
+            category="dealer_car_inspected",
         )
 
     # For Admin
     elif user.role == "admin":
         notifications = Notification.objects.filter(
-            recepient=user,
-            category="car_inspected",
+            recipient=user,
+            category="admin_car_inspected",
         )
 
     else:
@@ -2636,25 +2694,48 @@ def get_inspection_notifications(request):
 @permission_classes([IsAuthenticated])
 def get_inspection_report(request):
     car_id = request.GET.get("car_id")
-
     if not car_id:
         return Response(
-            {"message": "Provide Car ID"}, status=status.HTTP_400_BAD_REQUEST
+            {"message": "Provide Car ID"},
+            status=status.HTTP_400_BAD_REQUEST
         )
-
-    reports = InspectionReport.objects.select_related("saler_car__user").filter(
-        saler_car=car_id
-    )
-
-    if not reports.exists():
+    try:
+        report = InspectionReport.objects.get(saler_car=car_id)
+        serializer = InspectionReportSerializer(report)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except InspectionReport.DoesNotExist:
         return Response(
             {"message": "No report found for this car"},
             status=status.HTTP_404_NOT_FOUND,
         )
+    except MultipleObjectsReturned:  # type: ignore
+        # Handle case where multiple reports exist (shouldn't happen)
+        report = InspectionReport.objects.filter(saler_car=car_id).first()
+        serializer = InspectionReportSerializer(report)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+# @api_view(["GET"])
+# @permission_classes([IsAuthenticated])
+# def get_inspection_report(request):
+#     car_id = request.GET.get("car_id")
 
-    serialized_reports = InspectionReportSerializer(reports, many=True)
+#     if not car_id:
+#         return Response(
+#             {"message": "Provide Car ID"}, status=status.HTTP_400_BAD_REQUEST
+#         )
 
-    return Response(serialized_reports.data, status=status.HTTP_200_OK)
+#     reports = InspectionReport.objects.select_related("saler_car__user").filter(
+#         saler_car=car_id
+#     )
+
+#     if not reports.exists():
+#         return Response(
+#             {"message": "No report found for this car"},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+#     serialized_reports = InspectionReportSerializer(reports, many=True)
+
+#     return Response(serialized_reports.data, status=status.HTTP_200_OK)
 
 
 # get list of guest cars to show to inspector
@@ -2770,13 +2851,16 @@ def place_bid(request):
     bid = Bidding.objects.create(
         dealer=user, saler_car=saler_car, bid_amount=data["bid_amount"]
     )
-    Notification.objects.create(
-        recipient=saler_car.user,
-        message=f"You have a new bid of {data['bid_amount']} on {saler_car.company} {saler_car.car_name}",
-        saler_car=saler_car,
-        category="new_bid",
-        bid=bid,
-    )
+    User = get_user_model()
+    admin_users = User.objects.filter(role="admin")
+    for admin in admin_users:
+        Notification.objects.create(
+            recipient=admin,
+            message=f"A new bid of {data['bid_amount']} has been placed on {saler_car.company} {saler_car.car_name}",
+            saler_car=saler_car,
+            category="new_bid",
+            bid=bid,
+        )
 
     serializer = BiddingSerializer(bid)
     return Response(
@@ -2890,7 +2974,7 @@ def guest_add_car_details(request):
 
 
 # ////////////////////////////////////////////////////////other like status updating///////////////
-# generates when saler post car details
+# saler posted car notifications get
 @api_view(["GET"])
 @permission_classes({IsAuthenticated})
 def get_notifications(requet):

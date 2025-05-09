@@ -31,7 +31,8 @@ from .views import (
     assign_inspector_to_car,
     delete_ad,
     update_ad,
-    post_inspection_report_mob
+    post_inspection_report_mob,
+    bid_notification_for_seller
 )
 from .views import (
     get_list_of_car_for_inspection,
@@ -291,6 +292,8 @@ urlpatterns = [
     path("adminList/", adminList, name="adminList"),
     path("get_all_bidding/", get_all_bidding, name="get_all_bidding"),
     path("live-cars/", get_all_sold_cars, name="get_all_sold_cars"),
+    path("bid_notification_for_seller/", bid_notification_for_seller,
+         name="bid_notification_for_seller")
 
 
 
