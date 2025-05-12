@@ -298,12 +298,14 @@ class NotificationSerializer(serializers.ModelSerializer):
     bid_id = serializers.PrimaryKeyRelatedField(
         source='bid.id', read_only=True)
 
+    saler_car = SalerCarDetailsSerializer()
+
     # recepient_username = serializers.CharField(source= 'recepient_username',read_only=True)
 
     class Meta:
         model = Notification
         fields = ['id', 'recipient', 'message',
-                  'created_at', 'is_read', 'category', 'bid_id']
+                  'created_at', 'is_read', 'category', 'bid_id', 'saler_car']
 
 
 class Base64ImageField(serializers.ImageField):

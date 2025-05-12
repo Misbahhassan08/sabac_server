@@ -1645,12 +1645,12 @@ def inspector_update(request, inspector_id):
 
 # admin register
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def admin_register(request):
 
-    if request.user.role != "admin":
-        return Response({"message": "Only admin can register a dealer."},
-                        status=status.HTTP_403_FORBIDDEN)
+    # if request.user.role != "admin":
+    #     return Response({"message": "Only admin can register a dealer."},
+    #                     status=status.HTTP_403_FORBIDDEN)
 
     data = request.data
 
@@ -2930,6 +2930,49 @@ def post_guest_details(request):
 
 
 # GUEST POST CAR FOR SALE
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# def guest_add_car_details(request):
+#     try:
+#         data = request.data.copy()
+#         data["added_by"] = "guest"
+
+#         guest_id = data.get("guest_id")
+#         if not guest_id:
+#             return Response(
+#                 {"error": "Guest ID is required."}, status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         try:
+#             guest = Guest.objects.get(id=guest_id)
+#         except Guest.DoesNotExist:
+#             return Response(
+#                 {"error": "Invalid Guest ID."}, status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         data.pop("guest_id", None)
+#         serializer = SalerCarDetailsSerializer(data=data)
+#         if serializer.is_valid():
+#             car_details = serializer.save(guest=guest)
+
+#             return Response(
+#                 {
+#                     "message": "Car added successfully!",
+#                     "car_id": car_details.saler_car_id,
+#                 },
+#                 status=status.HTTP_201_CREATED,
+#             )
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     except Exception as e:
+#         print(f"Error in guest_add_car_details view: {str(e)}")
+#         return Response(
+#             {"success": False, "message": "An error occurred while adding car details"},
+#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#         )
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def guest_add_car_details(request):
@@ -2938,6 +2981,8 @@ def guest_add_car_details(request):
         data["added_by"] = "guest"
 
         guest_id = data.get("guest_id")
+        inspector_id = data.get("inspector_id")  # <-- NEW
+
         if not guest_id:
             return Response(
                 {"error": "Guest ID is required."}, status=status.HTTP_400_BAD_REQUEST
@@ -2950,10 +2995,31 @@ def guest_add_car_details(request):
                 {"error": "Invalid Guest ID."}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        inspector = None
+        if inspector_id:
+            try:
+                inspector = User.objects.get(id=inspector_id, role="inspector")
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "Invalid Inspector ID."}, status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Remove extra fields not in serializer
         data.pop("guest_id", None)
+        data.pop("inspector_id", None)
+
         serializer = SalerCarDetailsSerializer(data=data)
         if serializer.is_valid():
-            car_details = serializer.save(guest=guest)
+            car_details = serializer.save(guest=guest, inspector=inspector)
+
+            # Create notification for inspector
+            if inspector:
+                Notification.objects.create(
+                    recipient=inspector,
+                    message=f"You have been assigned to inspect the car '{car_details.car_name}' by guest user.",
+                    saler_car=car_details,
+                    category="inspection_assignment"
+                )
 
             return Response(
                 {
@@ -2972,9 +3038,10 @@ def guest_add_car_details(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-
 # ////////////////////////////////////////////////////////other like status updating///////////////
 # saler posted car notifications get
+
+
 @api_view(["GET"])
 @permission_classes({IsAuthenticated})
 def get_notifications(requet):

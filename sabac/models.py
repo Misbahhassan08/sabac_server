@@ -93,8 +93,8 @@ class saler_car_details(models.Model):
         max_length=15, null=True, blank=True)
     secondary_phone_number = models.CharField(
         max_length=15, null=True, blank=True)
-    inspection_date = models.DateField()
-    inspection_time = models.TimeField()
+    inspection_date = models.DateField(null=True, blank=True)
+    inspection_time = models.TimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(
