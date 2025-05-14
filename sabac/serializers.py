@@ -2,7 +2,19 @@ import base64
 import uuid
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from .models import User,  saler_car_details, Availability, SelectedSlot, InspectionReport, Bidding, Notification, AssignSlot, AdditionalDetails, Guest, DeviceToken
+from .models import (
+    User,
+    saler_car_details,
+    Availability,
+    SelectedSlot,
+    InspectionReport,
+    Bidding,
+    Notification,
+    AssignSlot,
+    AdditionalDetails,
+    Guest,
+    DeviceToken,
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -11,20 +23,18 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'email',
-            'password',
-            'role',
-            'phone_number',
-            'adress',
-            'image'
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "password",
+            "role",
+            "phone_number",
+            "adress",
+            "image",
         ]
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        extra_kwargs = {"password": {"write_only": True}}
 
     def validate_image(self, value):
         """Ensure the image is a valid Base64 string."""
@@ -34,18 +44,20 @@ class UserSerializer(serializers.ModelSerializer):
                 decoded_data = base64.b64decode(value)
 
                 # Ensure it's a valid image by checking file signature (optional)
-                if not decoded_data.startswith(b'\xFF\xD8') and not decoded_data.startswith(b'\x89PNG'):
+                if not decoded_data.startswith(
+                    b"\xFF\xD8"
+                ) and not decoded_data.startswith(b"\x89PNG"):
                     raise serializers.ValidationError(
-                        "Invalid image format. Only JPEG and PNG are supported.")
+                        "Invalid image format. Only JPEG and PNG are supported."
+                    )
 
             except Exception:
-                raise serializers.ValidationError(
-                    "Invalid Base64-encoded image.")
+                raise serializers.ValidationError("Invalid Base64-encoded image.")
         return value
 
     def create(self, validated_data):
         # Hash the password and create the user
-        password = validated_data.pop('password')
+        password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
         user.save()
@@ -64,52 +76,50 @@ class DeviceTokenSerializer(serializers.ModelSerializer):
 
 class SalerCarDetailsSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), allow_null=True, required=False)
+        queryset=User.objects.all(), allow_null=True, required=False
+    )
     is_sold = serializers.BooleanField(read_only=True)
     added_by = serializers.CharField(required=False, allow_blank=True)
     inspector = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role="inspector"), allow_null=True, required=False)
+        queryset=User.objects.filter(role="inspector"), allow_null=True, required=False
+    )
     seller = UserSerializer(source="user", read_only=True)
     guest = serializers.SerializerMethodField()
     photos = serializers.ListField(
-        child=serializers.URLField(),
-        allow_null=True,
-        required=False
+        child=serializers.URLField(), allow_null=True, required=False
     )
 
     class Meta:
         model = saler_car_details
         fields = [
-            'saler_car_id',
-            'user',
-            'guest',
-            'car_name',
-            'company',
-            'year',
-            'engine_size',
-            'milage',
-            'option_type',
-            'paint_condition',
-            'specs',
-            'inspection_date',
-            'inspection_time',
-            'created_at',
-            'updated_at',
-            'status',
-            'is_inspected',
-            'bidding_start_time',
-            'bidding_end_time',
-            'primary_phone_number',
-            'secondary_phone_number',
-            'added_by',
-            'is_booked',
-            'is_manual',
-            'is_sold',
-            'photos',
-            'inspector',
-            'seller',
-
-
+            "saler_car_id",
+            "user",
+            "guest",
+            "car_name",
+            "company",
+            "year",
+            "engine_size",
+            "milage",
+            "option_type",
+            "paint_condition",
+            "specs",
+            "inspection_date",
+            "inspection_time",
+            "created_at",
+            "updated_at",
+            "status",
+            "is_inspected",
+            "bidding_start_time",
+            "bidding_end_time",
+            "primary_phone_number",
+            "secondary_phone_number",
+            "added_by",
+            "is_booked",
+            "is_manual",
+            "is_sold",
+            "photos",
+            "inspector",
+            "seller",
         ]
         read_only_fields = ["status", "is_sold"]
 
@@ -119,7 +129,7 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             return {
                 "name": obj.guest.name,
                 "number": obj.guest.number,
-                "email": obj.guest.email
+                "email": obj.guest.email,
             }
         return None
 
@@ -186,7 +196,8 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
 class AvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Availability
-        fields = ['date', 'time_slot']
+        fields = ["date", "time_slot"]
+
 
 # slot selection
 
@@ -199,22 +210,18 @@ class SelectedSlotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SelectedSlot
-        fields = ['id', 'saler_car_details',
-                  'saler_detail', 'date', 'time_slot']
+        fields = ["id", "saler_car_details", "saler_detail", "date", "time_slot"]
 
     def get_saler_car_details(self, obj):
         return {
-            'car_name': obj.saler_car.car_name,
-            'company': obj.saler_car.company,
-            'color': obj.saler_car.color
+            "car_name": obj.saler_car.car_name,
+            "company": obj.saler_car.company,
+            "color": obj.saler_car.color,
         }
 
     def get_saler_detail(self, obj):
         saler = obj.saler_car.user
-        return {
-            'saler_name': saler.username,
-            'email': saler.email
-        }
+        return {"saler_name": saler.username, "email": saler.email}
 
 
 # class InspectionReportSerializer(serializers.ModelSerializer):
@@ -263,49 +270,63 @@ class SelectedSlotSerializer(serializers.ModelSerializer):
 #             'lights', 'speedometer_working', 'service_history'
 #         ]
 
+
 class InspectionReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = InspectionReport
-        fields = '__all__'
+        fields = "__all__"
+
 
 # Bidding model serializer
 
 
 class BiddingSerializer(serializers.ModelSerializer):
-    dealer_name = serializers.CharField(
-        source='dealer.username', read_only=True)
-    car_name = serializers.CharField(
-        source='saler_car.car_name', read_only=True)
-    car_id = serializers.IntegerField(source='saler_car.id', read_only=True)
-    owner_details = serializers.SerializerMethodField()
-    is_sold = serializers.BooleanField(
-        source='saler_car.is_sold', read_only=True)
+    dealer_name = serializers.CharField(source="dealer.username", read_only=True)
+    car_name = serializers.CharField(source="saler_car.car_name", read_only=True)
+    car_id = serializers.IntegerField(source="saler_car.id", read_only=True)
+    # owner_details = serializers.SerializerMethodField()
+    is_sold = serializers.BooleanField(source="saler_car.is_sold", read_only=True)
+    saler_car = SalerCarDetailsSerializer(read_only=True)
 
     class Meta:
         model = Bidding
-        fields = ['dealer', 'saler_car', 'bid_amount', 'is_accepted',
-                  'dealer_name', 'car_name', 'car_id', 'is_sold', 'owner_details', 'created_at']
+        fields = [
+            "id",
+            "bid_amount",
+            "is_accepted",
+            "dealer_name",
+            "car_name",
+            "car_id",
+            "is_sold",
+            # "owner_details",
+            "created_at",
+            "dealer",
+            "saler_car",
+        ]
 
-    def get_owner_details(self, obj):
-        owner = obj.saler_car.user
-        return {
-            'owner_name': owner.username,
-            'owner_email': owner.email
-        }
+    # def get_owner_details(self, obj):
+    #     owner = obj.saler_car.user
+    #     return {"owner_name": owner.username, "owner_email": owner.email}
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    bid_id = serializers.PrimaryKeyRelatedField(
-        source='bid.id', read_only=True)
-
-    saler_car = SalerCarDetailsSerializer()
+    # bid_id = serializers.PrimaryKeyRelatedField(source="bid.id", read_only=True)
+    bid = BiddingSerializer(read_only=True)
+    recipient = UserSerializer(read_only=True)
 
     # recepient_username = serializers.CharField(source= 'recepient_username',read_only=True)
 
     class Meta:
         model = Notification
-        fields = ['id', 'recipient', 'message',
-                  'created_at', 'is_read', 'category', 'bid_id', 'saler_car']
+        fields = [
+            "id",
+            "message",
+            "created_at",
+            "is_read",
+            "category",
+            "bid",
+            "recipient",
+        ]
 
 
 class Base64ImageField(serializers.ImageField):
@@ -335,8 +356,16 @@ class AssignedSlotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AssignSlot
-        fields = ["id", "inspector", "inspector_id", "car_id",
-                  "car", "date", "time_slot", "assigned_by"]
+        fields = [
+            "id",
+            "inspector",
+            "inspector_id",
+            "car_id",
+            "car",
+            "date",
+            "time_slot",
+            "assigned_by",
+        ]
         read_only_fields = ["inspector", "assigned_by", "car"]
 
     def create(self, validated_data):
@@ -346,16 +375,14 @@ class AssignedSlotSerializer(serializers.ModelSerializer):
 
         try:
             car = saler_car_details.objects.get(
-                saler_car_id=car_id)  # ✅ Fetch car object
+                saler_car_id=car_id
+            )  # ✅ Fetch car object
         except saler_car_details.DoesNotExist:
             raise serializers.ValidationError({"car_id": "Invalid Car ID"})
 
         # ✅ Only save in AssignSlot, DO NOT save in SelectedSlot
         assigned_slot = AssignSlot.objects.create(
-            inspector=inspector,
-            assigned_by="inspector",
-            car=car,
-            **validated_data
+            inspector=inspector, assigned_by="inspector", car=car, **validated_data
         )
 
         return assigned_slot
@@ -365,18 +392,14 @@ class AdditionalDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdditionalDetails
 
-        fields = [
-            "name", "number"
-        ]
+        fields = ["name", "number"]
 
 
 class GuestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Guest
 
-        fields = [
-            "name", "number", "email"
-        ]
+        fields = ["name", "number", "email"]
 
 
 class CarListingSerializer(serializers.ModelSerializer):
