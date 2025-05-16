@@ -1,4 +1,5 @@
 from django.db.models.functions import TruncWeek, TruncDay, TruncMonth
+
 # from sabac.services.user_migration import migrate_guest_to_user
 from django.db.models import Count
 from django.contrib.auth import get_user_model
@@ -32,8 +33,7 @@ from .serializers import (
     AssignedSlotSerializer,
     AdditionalDetailSerializer,
     GuestSerializer,
-    DeviceTokenSerializer
-
+    DeviceTokenSerializer,
 )
 from .models import (
     User,
@@ -47,7 +47,7 @@ from .models import (
     AssignSlot,
     AdditionalDetails,
     Guest,
-    DeviceToken
+    DeviceToken,
 )
 from rest_framework import status
 from datetime import datetime
@@ -73,7 +73,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             if not device_id:
                 return Response(
                     {"success": False, "message": "device_id is required"},
-                    status=status.HTTP_403_FORBIDDEN
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
             # Identify user
@@ -87,15 +87,23 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             if user.role == "dealer":
                 existing_devices = DeviceToken.objects.filter(user=user)
 
-                if existing_devices.count() >= 3 and not existing_devices.filter(device_id=device_id).exists():
+                if (
+                    existing_devices.count() >= 3
+                    and not existing_devices.filter(device_id=device_id).exists()
+                ):
                     return Response(
-                        {"success": False, "message": "Maximum number of devices reached. Please logout from another device to continue."},
-                        status=status.HTTP_403_FORBIDDEN
+                        {
+                            "success": False,
+                            "message": "Maximum number of devices reached. Please logout from another device to continue.",
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
                     )
 
             response = super().post(request, *args, **kwargs)
             if response.status_code != 200 or "access" not in response.data:
-                return Response({"success": False, "message": "Invalid credentials"}, status=401)
+                return Response(
+                    {"success": False, "message": "Invalid credentials"}, status=401
+                )
 
             tokens = response.data
 
@@ -107,12 +115,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
             user_serializer = UserSerializer(user)
 
-            res = Response({
-                "success": True,
-                "access_token": tokens["access"],
-                "refresh_token": tokens["refresh"],
-                "user": user_serializer.data,
-            })
+            res = Response(
+                {
+                    "success": True,
+                    "access_token": tokens["access"],
+                    "refresh_token": tokens["refresh"],
+                    "user": user_serializer.data,
+                }
+            )
 
             res.set_cookie(
                 key="access_token",
@@ -178,7 +188,7 @@ def logout(request):
         if not refresh_token or not device_id:
             return Response(
                 {"success": False, "error": "refresh_token and device_id are required"},
-                status=400
+                status=400,
             )
 
         try:
@@ -188,11 +198,9 @@ def logout(request):
             return Response({"success": False, "error": "Invalid token"}, status=400)
 
         # Remove device entry
-        DeviceToken.objects.filter(
-            user=request.user, device_id=device_id).delete()
+        DeviceToken.objects.filter(user=request.user, device_id=device_id).delete()
 
-        response = Response(
-            {"success": True, "message": "Logged out successfully"})
+        response = Response({"success": True, "message": "Logged out successfully"})
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
 
@@ -201,6 +209,7 @@ def logout(request):
     except Exception as e:
         return Response({"success": False, "error": str(e)}, status=400)
 
+
 # for check authentecated
 
 
@@ -208,6 +217,7 @@ def logout(request):
 @permission_classes([IsAuthenticated])
 def is_authentecated(request):
     return Response({"authentecation": True})
+
 
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
 
@@ -224,10 +234,8 @@ def get_cars_count(request):
                 status=status.HTTP_403_FORBIDDEN,
             )
         total_cars = saler_car_details.objects.all().count()
-        bidding_cars_count = saler_car_details.objects.filter(
-            status="bidding").count()
-        pending_cars_count = saler_car_details.objects.filter(
-            status="pending").count()
+        bidding_cars_count = saler_car_details.objects.filter(status="bidding").count()
+        pending_cars_count = saler_car_details.objects.filter(status="pending").count()
         sold_cars = saler_car_details.objects.filter(status="sold").count()
 
         return Response(
@@ -244,6 +252,7 @@ def get_cars_count(request):
             {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
 # get highest bid
 
 
@@ -257,8 +266,7 @@ def get_highest_bid(request):
                 {"message": "only admin can view"}, status=status.HTTP_403_FORBIDDEN
             )
 
-        highest_bid = Bidding.objects.aggregate(
-            Max("bid_amount"))["bid_amount__max"]
+        highest_bid = Bidding.objects.aggregate(Max("bid_amount"))["bid_amount__max"]
 
         if highest_bid is None:
             return Response({"highest_bid_amount": 0}, status=status.HTTP_200_OK)
@@ -270,24 +278,29 @@ def get_highest_bid(request):
             {"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
 # get list of cars accepted or rejected
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_reviewd_inspection(request):
     try:
         user = request.user
-        if user.role != 'admin':
-            return Response({"message": "only admin can view"}, status=status.HTTP_403_FORBIDDEN)
+        if user.role != "admin":
+            return Response(
+                {"message": "only admin can view"}, status=status.HTTP_403_FORBIDDEN
+            )
         cars = saler_car_details.objects.filter(
-            Q(is_accepted=True) | Q(is_rejected=True))
+            Q(is_accepted=True) | Q(is_rejected=True)
+        )
 
         serializer = SalerCarDetailsSerializer(cars, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # car list with status awaiting approval
 
@@ -309,6 +322,7 @@ def get_cars_for_approval(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 # accept inspection
 
 
@@ -322,6 +336,7 @@ def approve_inspection(request, report_id):
         status=status.HTTP_201_CREATED,
     )
 
+
 # reject inspection
 
 
@@ -334,6 +349,7 @@ def reject_inspection(request, report_id):
         {"message": "Car is rejected by admin"}, status=status.HTTP_201_CREATED
     )
 
+
 # get the list of all cars by sellers TOTAL CARS IN DATABSE NOT USED
 
 
@@ -344,6 +360,7 @@ def get_cars_list(request):
     cars = saler_car_details.objects.all()
     serializer = SalerCarDetailsSerializer(cars, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # ADMIN REGISTER THE DEALER AND INSPECTOR
 
@@ -366,6 +383,7 @@ def register(request):
         serializer.save()
         return Response(serializer.data)
     return Response(serializer.errors)
+
 
 # ADMIN UPDATE THE SALER & INSPECTOR
 
@@ -393,12 +411,10 @@ def edit_user(request):
 
         data = request.data
         user_to_edit.username = data.get("username", user_to_edit.username)
-        user_to_edit.first_name = data.get(
-            "first_name", user_to_edit.first_name)
+        user_to_edit.first_name = data.get("first_name", user_to_edit.first_name)
         user_to_edit.last_name = data.get("last_name", user_to_edit.last_name)
         user_to_edit.email = data.get("email", user_to_edit.email)
-        user_to_edit.phone_number = data.get(
-            "phone_number", user_to_edit.phone_number)
+        user_to_edit.phone_number = data.get("phone_number", user_to_edit.phone_number)
 
         if user_to_edit != admin:
             new_role = data.get("role")
@@ -438,6 +454,7 @@ def edit_user(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
 # ADMIN DELETE THE USERS
 
 
@@ -465,10 +482,11 @@ def delete_user(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 # get LIST OF ALL users
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def usersList(request):
     try:
@@ -476,23 +494,23 @@ def usersList(request):
         if not request.user.is_authenticated:
             return Response(
                 {"success": False, "message": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if request.user.role != 'admin':
-            logger.warning(
-                f"Unauthorized access attempt by user: {request.user.email}")
+        if request.user.role != "admin":
+            logger.warning(f"Unauthorized access attempt by user: {request.user.email}")
             return Response(
                 {
                     "success": False,
-                    "message": "You are not authorized. Only admins can access this resource."
+                    "message": "You are not authorized. Only admins can access this resource.",
                 },
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # 2. Fetch all users (optimized query)
-        users = User.objects.all().only('id', 'email', 'role',
-                                        'username')  # Select only needed fields
+        users = User.objects.all().only(
+            "id", "email", "role", "username"
+        )  # Select only needed fields
 
         # 3. Serialize data
         serializer = UserSerializer(users, many=True)
@@ -503,7 +521,7 @@ def usersList(request):
                 "success": True,
                 "users": serializer.data,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
@@ -512,37 +530,37 @@ def usersList(request):
             {
                 "success": False,
                 "message": "An unexpected error occurred while fetching users.",
-                "error": str(e)
+                "error": str(e),
             },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # list of dealrs
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dealersList(request):
     try:
         if not request.user.is_authenticated:
             return Response(
                 {"success": False, "message": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if request.user.role != 'admin':
-            logger.warning(
-                f"Unauthorized access attempt by user: {request.user.email}")
+        if request.user.role != "admin":
+            logger.warning(f"Unauthorized access attempt by user: {request.user.email}")
             return Response(
                 {
                     "success": False,
-                    "message": "You are not authorized. Only admins can access this resource."
+                    "message": "You are not authorized. Only admins can access this resource.",
                 },
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # 🔍 Filter only dealers and return all fields
-        users = User.objects.filter(role='dealer')
+        users = User.objects.filter(role="dealer")
 
         # Serialize all fields
         serializer = UserSerializer(users, many=True)
@@ -552,7 +570,7 @@ def dealersList(request):
                 "success": True,
                 "dealers": serializer.data,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
@@ -561,37 +579,37 @@ def dealersList(request):
             {
                 "success": False,
                 "message": "An unexpected error occurred while fetching users.",
-                "error": str(e)
+                "error": str(e),
             },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # list of inspectors
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def inspectorsList(request):
     try:
         if not request.user.is_authenticated:
             return Response(
                 {"success": False, "message": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if request.user.role != 'admin':
-            logger.warning(
-                f"Unauthorized access attempt by user: {request.user.email}")
+        if request.user.role != "admin":
+            logger.warning(f"Unauthorized access attempt by user: {request.user.email}")
             return Response(
                 {
                     "success": False,
-                    "message": "You are not authorized. Only admins can access this resource."
+                    "message": "You are not authorized. Only admins can access this resource.",
                 },
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # 🔍 Filter only dealers and return all fields
-        users = User.objects.filter(role='inspector')
+        users = User.objects.filter(role="inspector")
 
         # Serialize all fields
         serializer = UserSerializer(users, many=True)
@@ -601,7 +619,7 @@ def inspectorsList(request):
                 "success": True,
                 "inspectors": serializer.data,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
@@ -610,37 +628,37 @@ def inspectorsList(request):
             {
                 "success": False,
                 "message": "An unexpected error occurred while fetching users.",
-                "error": str(e)
+                "error": str(e),
             },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # list of admins
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def adminList(request):
     try:
         if not request.user.is_authenticated:
             return Response(
                 {"success": False, "message": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if request.user.role != 'admin':
-            logger.warning(
-                f"Unauthorized access attempt by user: {request.user.email}")
+        if request.user.role != "admin":
+            logger.warning(f"Unauthorized access attempt by user: {request.user.email}")
             return Response(
                 {
                     "success": False,
-                    "message": "You are not authorized. Only admins can access this resource."
+                    "message": "You are not authorized. Only admins can access this resource.",
                 },
-                status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         # 🔍 Filter only dealers and return all fields
-        users = User.objects.filter(role='admin')
+        users = User.objects.filter(role="admin")
 
         # Serialize all fields
         serializer = UserSerializer(users, many=True)
@@ -650,7 +668,7 @@ def adminList(request):
                 "success": True,
                 "admins": serializer.data,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
@@ -659,60 +677,66 @@ def adminList(request):
             {
                 "success": False,
                 "message": "An unexpected error occurred while fetching users.",
-                "error": str(e)
+                "error": str(e),
             },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # count of users
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_user_count(request):
     try:
-        if request.user.role != 'admin':
-            return Response({"message": "only admin can access"}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role != "admin":
+            return Response(
+                {"message": "only admin can access"}, status=status.HTTP_403_FORBIDDEN
+            )
 
         total = User.objects.count()
-        sellers = User.objects.filter(role='saler').count()
-        inspector = User.objects.filter(role='inspector').count()
-        dealer = User.objects.filter(role='dealer').count()
-        admin = User.objects.filter(role='admin').count()
+        sellers = User.objects.filter(role="saler").count()
+        inspector = User.objects.filter(role="inspector").count()
+        dealer = User.objects.filter(role="dealer").count()
+        admin = User.objects.filter(role="admin").count()
 
         data = {
             "total_users": total,
             "sellers": sellers,
             "inspector": inspector,
             "dealer": dealer,
-            "admin": admin
+            "admin": admin,
         }
 
         return Response(data, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 # count of cars
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_cars_count(request):
     try:
-        if request.user.role != 'admin':
-            return Response({"message": "Only admin can access"}, status=status.HTTP_403_FORBIDDEN)
+        if request.user.role != "admin":
+            return Response(
+                {"message": "Only admin can access"}, status=status.HTTP_403_FORBIDDEN
+            )
 
         total = saler_car_details.objects.count()
-        pending = saler_car_details.objects.filter(status='pending').count()
-        assigned = saler_car_details.objects.filter(status='assigned').count()
-        in_inspection = saler_car_details.objects.filter(
-            status='in_inspection').count()
+        pending = saler_car_details.objects.filter(status="pending").count()
+        assigned = saler_car_details.objects.filter(status="assigned").count()
+        in_inspection = saler_car_details.objects.filter(status="in_inspection").count()
         awaiting_approval = saler_car_details.objects.filter(
-            status='await_approval').count()
-        rejected = saler_car_details.objects.filter(status='rejected').count()
-        bidding = saler_car_details.objects.filter(status='bidding').count()
-        expired = saler_car_details.objects.filter(status='expired').count()
-        sold = saler_car_details.objects.filter(status='sold').count()
+            status="await_approval"
+        ).count()
+        rejected = saler_car_details.objects.filter(status="rejected").count()
+        bidding = saler_car_details.objects.filter(status="bidding").count()
+        expired = saler_car_details.objects.filter(status="expired").count()
+        sold = saler_car_details.objects.filter(status="sold").count()
 
         data = {
             "total_cars": total,
@@ -723,71 +747,85 @@ def get_cars_count(request):
             "rejected": rejected,
             "bidding": bidding,
             "expired": expired,
-            "sold": sold
+            "sold": sold,
         }
         return Response(data, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 # car posting graph daily weekly
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def carsStats(request):
-    range_type = request.GET.get('range', 'daily')
-    from_date = request.GET.get('from_date')
-    to_date = request.GET.get('to_date')
+    range_type = request.GET.get("range", "daily")
+    from_date = request.GET.get("from_date")
+    to_date = request.GET.get("to_date")
 
     queryset = saler_car_details.objects.all()
 
     if from_date and to_date:
         try:
-            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d')
-            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d')
-            queryset = queryset.filter(created_at__date__gte=from_date_obj,
-                                       created_at__date__lte=to_date_obj)
+            from_date_obj = datetime.strptime(from_date, "%Y-%m-%d")
+            to_date_obj = datetime.strptime(to_date, "%Y-%m-%d")
+            queryset = queryset.filter(
+                created_at__date__gte=from_date_obj, created_at__date__lte=to_date_obj
+            )
         except ValueError:
-            return Response({"error": "Invalid date format. Use YYYY-MM-DD."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid date format. Use YYYY-MM-DD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     if range_type == "weekly":
-        queryset = queryset.annotate(period=TruncWeek('created_at'))
+        queryset = queryset.annotate(period=TruncWeek("created_at"))
 
     elif range_type == "monthly":
-        queryset = queryset.annotate(period=TruncMonth('created_at'))
+        queryset = queryset.annotate(period=TruncMonth("created_at"))
 
     elif range_type == "15days":
-        queryset = queryset.extra(select={
-            'period': "DATE_TRUNC('day', created_at) - INTERVAL '1 day' * (EXTRACT(DAY FROM created_at)::int % 15)"
-        })
+        queryset = queryset.extra(
+            select={
+                "period": "DATE_TRUNC('day', created_at) - INTERVAL '1 day' * (EXTRACT(DAY FROM created_at)::int % 15)"
+            }
+        )
 
     elif range_type == "3months":
-        queryset = queryset.extra(select={
-            'period': "DATE_TRUNC('month', created_at) - INTERVAL '1 month' * (EXTRACT(MONTH FROM created_at)::int % 3)"
-        })
+        queryset = queryset.extra(
+            select={
+                "period": "DATE_TRUNC('month', created_at) - INTERVAL '1 month' * (EXTRACT(MONTH FROM created_at)::int % 3)"
+            }
+        )
 
     elif range_type == "6months":
-        queryset = queryset.extra(select={
-            'period': "DATE_TRUNC('month', created_at) - INTERVAL '1 month' * (EXTRACT(MONTH FROM created_at)::int % 6)"
-        })
+        queryset = queryset.extra(
+            select={
+                "period": "DATE_TRUNC('month', created_at) - INTERVAL '1 month' * (EXTRACT(MONTH FROM created_at)::int % 6)"
+            }
+        )
 
     elif range_type == "1year":
-        queryset = queryset.extra(select={
-            'period': "DATE_TRUNC('year', created_at)"
-        })
+        queryset = queryset.extra(select={"period": "DATE_TRUNC('year', created_at)"})
 
     elif range_type == "complete":
         total = queryset.count()
-        return Response([{"period": "Complete", "count": total}], status=status.HTTP_200_OK)
+        return Response(
+            [{"period": "Complete", "count": total}], status=status.HTTP_200_OK
+        )
 
     else:
-        queryset = queryset.annotate(period=TruncDay('created_at'))
+        queryset = queryset.annotate(period=TruncDay("created_at"))
 
-    data = queryset.values('period').annotate(
-        count=Count('saler_car_id')).order_by('period')
+    data = (
+        queryset.values("period")
+        .annotate(count=Count("saler_car_id"))
+        .order_by("period")
+    )
     return Response(data, status=status.HTTP_200_OK)
+
 
 # ACCEPT BID
 
@@ -808,9 +846,7 @@ def accept_bid(request, bid_id):
         bid = Bidding.objects.get(id=bid_id)
     except Bidding.DoesNotExist:
         logger.error(f"Bid with id {bid_id} not found.")
-        return Response(
-            {"message": "Bid not found"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"message": "Bid not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if bid.status != "pending":
         return Response(
@@ -827,8 +863,7 @@ def accept_bid(request, bid_id):
     car.save()
 
     # Reject other bids
-    Bidding.objects.filter(saler_car=car).exclude(
-        id=bid_id).update(status="rejected")
+    Bidding.objects.filter(saler_car=car).exclude(id=bid_id).update(status="rejected")
 
     # Notify dealer
     Notification.objects.create(
@@ -861,9 +896,7 @@ def reject_bid(request, bid_id):
     bid = get_object_or_404(Bidding, id=bid_id)
 
     if bid.status != "pending":
-        logger.info(
-            f"Bid {bid_id} has already been processed with status {bid.status}"
-        )
+        logger.info(f"Bid {bid_id} has already been processed with status {bid.status}")
         return Response(
             {"message": "Bid has already been processed"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -885,6 +918,7 @@ def reject_bid(request, bid_id):
 
     logger.info(f"Bid {bid_id} rejected successfully by admin {user.username}")
     return Response({"message": "Bid rejected"}, status=status.HTTP_200_OK)
+
 
 # FETCH BID NOTIFICATION FOR admin not used
 
@@ -913,6 +947,7 @@ def bid_notification(request):
             {"message": f"Error: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # FETCH BID NOTIFICATION FOR admin
 
@@ -976,7 +1011,7 @@ def mark_bid_notifications_as_read(request):
 
 
 # admin view all bids
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_all_bidding(request):
     user = request.user
@@ -984,13 +1019,12 @@ def get_all_bidding(request):
     if user.role != "admin":
         return Response(
             {"success": False, "message": "Only admin can view all bids."},
-            status=status.HTTP_403_FORBIDDEN
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     try:
 
-        bids = Bidding.objects.select_related(
-            'dealer', 'saler_car', 'saler_car__user')
+        bids = Bidding.objects.select_related("dealer", "saler_car", "saler_car__user")
 
         serializer = BiddingSerializer(bids, many=True)
 
@@ -998,66 +1032,77 @@ def get_all_bidding(request):
             {
                 "success": True,
                 "message": "All bids fetched successfully.",
-                "bids": serializer.data
+                "bids": serializer.data,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     except Exception as e:
-        logger.error(
-            f"Error fetching all bids for admin: {str(e)}", exc_info=True)
+        logger.error(f"Error fetching all bids for admin: {str(e)}", exc_info=True)
         return Response(
             {
                 "success": False,
                 "message": "An unexpected error occurred while fetching bids.",
-                "error": str(e)
+                "error": str(e),
             },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
 # admin view all sold cars
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_all_sold_cars(request):
 
-    sold_cars = saler_car_details.objects.filter(status='sold', is_sold=True)
+    sold_cars = saler_car_details.objects.filter(status="sold", is_sold=True)
 
     result = []
 
     for car in sold_cars:
-        accepted_bid = Bidding.objects.filter(
-            saler_car=car, is_accepted=True).first()
+        accepted_bid = Bidding.objects.filter(saler_car=car, is_accepted=True).first()
 
-        result.append({
-            "car_id": car.saler_car_id,
-            "car_name": car.car_name,
-            "company": car.company,
-            "photos": car.photos if car.photos else [],
-            "year": car.year,
-            "owner": {
-                "id": car.user.id,
-                "username": car.user.username,
-                "first_name": car.user.first_name,
-                "last_name": car.user.last_name,
-                "adress": car.user.adress,
-                "number": car.user.phone_number
-            } if car.user else None,
-            "winner_dealer": {
-                "id": car.winner_dealer.id,
-                "username": car.winner_dealer.username,
-                "first_name": car.winner_dealer.first_name,
-                "last_name": car.winner_dealer.last_name,
-                "adress": car.winner_dealer.adress,
-                "number": car.winner_dealer.phone_number
-            } if car.winner_dealer else None,
-            "accepted_bid_amount": str(accepted_bid.bid_amount) if accepted_bid else None,
-            "accepted_bid_date": accepted_bid.bid_date if accepted_bid else None,
-        })
+        result.append(
+            {
+                "car_id": car.saler_car_id,
+                "car_name": car.car_name,
+                "company": car.company,
+                "photos": car.photos if car.photos else [],
+                "year": car.year,
+                "owner": (
+                    {
+                        "id": car.user.id,
+                        "username": car.user.username,
+                        "first_name": car.user.first_name,
+                        "last_name": car.user.last_name,
+                        "adress": car.user.adress,
+                        "number": car.user.phone_number,
+                    }
+                    if car.user
+                    else None
+                ),
+                "winner_dealer": (
+                    {
+                        "id": car.winner_dealer.id,
+                        "username": car.winner_dealer.username,
+                        "first_name": car.winner_dealer.first_name,
+                        "last_name": car.winner_dealer.last_name,
+                        "adress": car.winner_dealer.adress,
+                        "number": car.winner_dealer.phone_number,
+                    }
+                    if car.winner_dealer
+                    else None
+                ),
+                "accepted_bid_amount": (
+                    str(accepted_bid.bid_amount) if accepted_bid else None
+                ),
+                "accepted_bid_date": accepted_bid.bid_date if accepted_bid else None,
+            }
+        )
         return Response(result)
 
 
 # /////////////////////////////////////SELLER APIs/////////////////////////////////////////
+
 
 # seller post car detail
 @api_view(["POST"])
@@ -1076,7 +1121,9 @@ def add_car_details(request):
             saler_phone_number = getattr(user, "phone_number", "N/A")
 
             inspection_date = car_details.inspection_date.strftime("%Y-%m-%d")
-            inspection_time = car_details.inspection_time.strftime("%H:%M")
+            # inspection_time = car_details.inspection_time.strftime("%I:%M %p")
+            inspection_time = car_details.inspection_time 
+
 
             inspectors = User.objects.filter(role="inspector")
 
@@ -1106,7 +1153,8 @@ def add_car_details(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
- # SALER SELECTS SLOTS
+
+# SALER SELECTS SLOTS
 
 
 # seller select slot
@@ -1210,6 +1258,7 @@ def get_user_cars(request):
 
     return Response({"cars": serializer.data}, status=status.HTTP_200_OK)
 
+
 # notifciation of appointment
 
 
@@ -1240,8 +1289,7 @@ def update_car_details(request, car_id):
         return Response("only Sler can update", status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        saler_car = saler_car_details.objects.get(
-            saler_car_id=car_id, user=user)
+        saler_car = saler_car_details.objects.get(saler_car_id=car_id, user=user)
     except saler_car_details.DoesNotExist:
         return Response("Car not found", status=status.HTTP_404_NOT_FOUND)
 
@@ -1249,8 +1297,7 @@ def update_car_details(request, car_id):
 
     old_car_details = saler_car.__dict__.copy()
 
-    serializer = SalerCarDetailsSerializer(
-        saler_car, data=request.data, partial=True)
+    serializer = SalerCarDetailsSerializer(saler_car, data=request.data, partial=True)
 
     if serializer.is_valid():
         updated_car = serializer.save()
@@ -1284,9 +1331,9 @@ def saler_appointmet(request):
         )
 
     # Fetch all appointments related to the seller
-    appointments = saler_car_details.objects.filter(
-        user=user
-    ).order_by("inspection_date", "inspection_time")
+    appointments = saler_car_details.objects.filter(user=user).order_by(
+        "inspection_date", "inspection_time"
+    )
 
     if not appointments.exists():
         return Response(
@@ -1294,15 +1341,16 @@ def saler_appointmet(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    serialized_appointments = SalerCarDetailsSerializer(
-        appointments, many=True).data
+    serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
 
     # Simplify the format for inspection date/time
     for i, appointment in enumerate(appointments):
-        serialized_appointments[i]["inspection_date"] = appointment.inspection_date.strftime(
-            "%Y-%m-%d")
-        serialized_appointments[i]["inspection_time"] = appointment.inspection_time.strftime(
-            "%H:%M:%S")
+        serialized_appointments[i]["inspection_date"] = (
+            appointment.inspection_date.strftime("%Y-%m-%d")
+        )
+        serialized_appointments[i]["inspection_time"] = (
+            appointment.inspection_time
+        )
 
     return Response(
         {
@@ -1311,6 +1359,7 @@ def saler_appointmet(request):
         },
         status=status.HTTP_200_OK,
     )
+
 
 # Saler appointment Slot assigned by insppector manually
 
@@ -1480,6 +1529,7 @@ def saler_register(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 # dealer register
 
 
@@ -1488,8 +1538,10 @@ def saler_register(request):
 def dealer_register(request):
 
     if request.user.role != "admin":
-        return Response({"message": "Only admin can register a dealer."},
-                        status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Only admin can register a dealer."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     data = request.data
 
@@ -1528,13 +1580,17 @@ def dealer_register(request):
 @permission_classes([IsAuthenticated])
 def dealer_update(request, dealer_id):
     if request.user.role != "admin":
-        return Response({"message": "Only admin can update dealer details."},
-                        status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Only admin can update dealer details."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     try:
         user = User.objects.get(id=dealer_id, role="dealer")
     except User.DoesNotExist:
-        return Response({"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     data = request.data
 
@@ -1550,16 +1606,19 @@ def dealer_update(request, dealer_id):
 
     user.save()
 
-    return Response({
-        "message": "Dealer updated successfully",
-        "id": user.id,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "username": user.username,
-        "email": user.email,
-        "phone_number": user.phone_number,
-        "role": user.role,
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "message": "Dealer updated successfully",
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "role": user.role,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # inspector register
@@ -1568,8 +1627,10 @@ def dealer_update(request, dealer_id):
 def inspector_register(request):
 
     if request.user.role != "admin":
-        return Response({"message": "Only admin can register a dealer."},
-                        status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Only admin can register a dealer."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     data = request.data
 
@@ -1608,13 +1669,17 @@ def inspector_register(request):
 @permission_classes([IsAuthenticated])
 def inspector_update(request, inspector_id):
     if request.user.role != "admin":
-        return Response({"message": "Only admin can update dealer details."},
-                        status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Only admin can update dealer details."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     try:
         user = User.objects.get(id=inspector_id, role="inspector")
     except User.DoesNotExist:
-        return Response({"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     data = request.data
 
@@ -1630,17 +1695,20 @@ def inspector_update(request, inspector_id):
 
     user.save()
 
-    return Response({
-        "message": "inspector updated successfully",
-        "id": user.id,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "username": user.username,
-        "email": user.email,
-        "phone_number": user.phone_number,
-        "adress": user.adress,
-        "role": user.role,
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "message": "inspector updated successfully",
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "adress": user.adress,
+            "role": user.role,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # admin register
@@ -1690,13 +1758,17 @@ def admin_register(request):
 @permission_classes([IsAuthenticated])
 def admin_update(request, admin_id):
     if request.user.role != "admin":
-        return Response({"message": "Only admin can update dealer details."},
-                        status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Only admin can update dealer details."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     try:
         user = User.objects.get(id=admin_id, role="admin")
     except User.DoesNotExist:
-        return Response({"message": "Admin not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "Admin not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     data = request.data
 
@@ -1712,16 +1784,19 @@ def admin_update(request, admin_id):
 
     user.save()
 
-    return Response({
-        "message": "admin updated successfully",
-        "id": user.id,
-        "first_name": user.first_name,
-        "last_name": user.last_name,
-        "username": user.username,
-        "email": user.email,
-        "phone_number": user.phone_number,
-        "role": user.role,
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "message": "admin updated successfully",
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "role": user.role,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # VIEW BIDS FOR SPECEFIC CAR
@@ -1744,7 +1819,7 @@ def view_car_bids(request, car_id):
 
 
 # SELLER DELETE ITS CAR
-@api_view(['DELETE'])
+@api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_ad(request, car_id):
     user = request.user
@@ -1757,16 +1832,19 @@ def delete_ad(request, car_id):
 
     if car.user != user:
         print("car owner:", car.user)
-        return Response({"message": "Unauthentecated"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "Unauthentecated"}, status=status.HTTP_403_FORBIDDEN
+        )
 
     car.delete()
 
     return Response({"message": "car deleted successfully"}, status=status.HTTP_200_OK)
 
+
 # SELLER UPDATED ITS CAR DETAIL
 
 
-@api_view(['PUT', 'PATCH'])
+@api_view(["PUT", "PATCH"])
 @permission_classes([IsAuthenticated])
 def update_ad(request, car_id):
     user = request.user
@@ -1784,9 +1862,13 @@ def update_ad(request, car_id):
 
     if serializer.is_valid():
         serializer.save()
-        return Response({"message": "car updated successfully", "car": serializer.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "car updated successfully", "car": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # Assign inspector to a car (Guest or Seller) ON CALL
 
@@ -1834,6 +1916,7 @@ def assign_inspector_to_car(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 # GET THE CAR DETAILS OF SALER
 
 
@@ -1850,6 +1933,7 @@ def get_car_details(request):
         )
     serializer = SalerCarDetailsSerializer(cars, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # lIST OF INSPECTORS
 
@@ -1911,8 +1995,7 @@ def get_last_car_details(request):
     user = request.user
 
     last_car = (
-        saler_car_details.objects.filter(
-            user=user).order_by("-saler_car_id").first()
+        saler_car_details.objects.filter(user=user).order_by("-saler_car_id").first()
     )
     if not last_car:
         return Response(
@@ -1962,9 +2045,7 @@ def inspector_appointments(request):
         )
 
     appointments = saler_car_details.objects.filter(
-        inspector=user,
-        user__isnull=False,
-        is_manual=False
+        inspector=user, user__isnull=False, is_manual=False
     ).order_by("inspection_date", "inspection_time")
 
     if not appointments.exists():
@@ -1973,15 +2054,16 @@ def inspector_appointments(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    serialized_appointments = SalerCarDetailsSerializer(
-        appointments, many=True).data
+    serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
 
     # Optionally attach only inspection date/time in a simplified format
     for i, appointment in enumerate(appointments):
-        serialized_appointments[i]["inspection_date"] = appointment.inspection_date.strftime(
-            "%Y-%m-%d")
-        serialized_appointments[i]["inspection_time"] = appointment.inspection_time.strftime(
-            "%H:%M:%S")
+        serialized_appointments[i]["inspection_date"] = (
+            appointment.inspection_date.strftime("%Y-%m-%d")
+        )
+        serialized_appointments[i]["inspection_time"] = (
+            appointment.inspection_time
+        )
 
     return Response(
         {
@@ -1990,6 +2072,7 @@ def inspector_appointments(request):
         },
         status=status.HTTP_200_OK,
     )
+
 
 # INSPECTOR ASSIGN SLOTS
 
@@ -2013,8 +2096,7 @@ def assign_slot(request):
 
     data["car"] = car.saler_car_id
 
-    serializer = AssignedSlotSerializer(
-        data=data, context={"request": request})
+    serializer = AssignedSlotSerializer(data=data, context={"request": request})
 
     if serializer.is_valid():
         assigned_slot = serializer.save()
@@ -2031,9 +2113,7 @@ def assign_slot(request):
             ]
             if assigned_slot.time_slot in availability.time_slots:
                 availability.time_slots.remove(assigned_slot.time_slot)
-                availability.save(
-                    update_fields=["time_slots"]
-                )
+                availability.save(update_fields=["time_slots"])
 
         except Availability.DoesNotExist:
             return Response(
@@ -2042,8 +2122,7 @@ def assign_slot(request):
             )
 
         return Response(
-            AssignedSlotSerializer(
-                assigned_slot).data, status=status.HTTP_201_CREATED
+            AssignedSlotSerializer(assigned_slot).data, status=status.HTTP_201_CREATED
         )
     else:
         print("Errors:", serializer.errors)
@@ -2059,9 +2138,7 @@ def get_assigned_slots(request):
         .filter(
             Q(car__user__isnull=False)
             | Q(car__is_manual=True)
-            | Q(
-                car__guest__isnull=False
-            )
+            | Q(car__guest__isnull=False)
         )
         .exclude(car__isnull=True)
     )
@@ -2215,6 +2292,7 @@ def post_inspection_report(request):
 
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def post_inspection_report_mob(request):
@@ -2240,7 +2318,7 @@ def post_inspection_report_mob(request):
             {"message": "Car not found."},
             status=status.HTTP_404_NOT_FOUND,
         )
-  # "json_obj"
+    # "json_obj"
     # Prepare the JSON data in the expected format
     json_obj = data.get("json_obj")
     mobile_data = {
@@ -2251,10 +2329,7 @@ def post_inspection_report_mob(request):
     merge_result = merge_json(my_default_json, mobile_data)
     # complete_josn = add_jsons(json.dumps(basic_json), json.dumps(merge_json))
     # Create a copy of the data with the properly formatted json_obj
-    serializer_data = {
-        **data,
-        "json_obj": merge_result
-    }
+    serializer_data = {**data, "json_obj": merge_result}
     serializer = InspectionReportSerializer(data=serializer_data)
     if serializer.is_valid():
         report = serializer.save(inspector=user, saler_car=car)
@@ -2286,15 +2361,19 @@ def post_inspection_report_mob(request):
             status=status.HTTP_201_CREATED,
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 # UPDATE INSPECTION REPORT
 
 
 @permission_classes([IsAuthenticated])
-@api_view(['PUT'])
+@api_view(["PUT"])
 def update_inspection_report(request, report_id):
     user = request.user
     if user.role != "inspector":
-        return Response({"message": "only inspector can update"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "only inspector can update"}, status=status.HTTP_403_FORBIDDEN
+        )
 
     try:
         report = InspectionReport.objects.get(id=report_id, inspector=user)
@@ -2302,7 +2381,9 @@ def update_inspection_report(request, report_id):
     except InspectionReport.DoesNotExist:
         # Debugging line
         print(f"Report with ID {report_id} not found for inspector {user}")
-        return Response({"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND
+        )
 
     data = request.data
 
@@ -2318,7 +2399,7 @@ def update_inspection_report(request, report_id):
                 {"message": f"Error processing image: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-     # Update fields
+    # Update fields
     report.car_name = data.get("car_name", report.car_name)
     report.company = data.get("company", report.company)
     report.color = data.get("color", report.color)
@@ -2327,47 +2408,50 @@ def update_inspection_report(request, report_id):
     report.fuel_type = data.get("fuel_type", report.fuel_type)
     # report.registry_number = data.get("registry_number", report.registry_number)
     report.year = data.get("year", report.year)
-    report.engine_capacity = data.get(
-        "engine_capacity", report.engine_capacity)
+    report.engine_capacity = data.get("engine_capacity", report.engine_capacity)
     report.mileage = data.get("mileage", report.mileage)
     # report.chassis_number = data.get("chassis_number", report.chassis_number)
     report.engine_type = data.get("engine_type", report.engine_type)
-    report.transmission_type = data.get(
-        "transmission_type", report.transmission_type)
+    report.transmission_type = data.get("transmission_type", report.transmission_type)
 
     # Update condition fields
-    report.engine_condition = data.get(
-        "engine_condition", report.engine_condition)
+    report.engine_condition = data.get("engine_condition", report.engine_condition)
     report.body_condition = data.get("body_condition", report.body_condition)
-    report.clutch_condition = data.get(
-        "clutch_condition", report.clutch_condition)
+    report.clutch_condition = data.get("clutch_condition", report.clutch_condition)
     report.steering_condition = data.get(
-        "steering_condition", report.steering_condition)
+        "steering_condition", report.steering_condition
+    )
     report.suspension_condition = data.get(
-        "suspension_condition", report.suspension_condition)
-    report.brakes_condition = data.get(
-        "brakes_condition", report.brakes_condition)
+        "suspension_condition", report.suspension_condition
+    )
+    report.brakes_condition = data.get("brakes_condition", report.brakes_condition)
     report.ac_condition = data.get("ac_condition", report.ac_condition)
-    report.tyres_condition = data.get(
-        "tyres_condition", report.tyres_condition)
+    report.tyres_condition = data.get("tyres_condition", report.tyres_condition)
     report.electrical_condition = data.get(
-        "electrical_condition", report.electrical_condition)
+        "electrical_condition", report.electrical_condition
+    )
 
     # Update financial details
-    report.estimated_value = data.get(
-        "estimated_value", report.estimated_value)
+    report.estimated_value = data.get("estimated_value", report.estimated_value)
     report.saler_demand = data.get("saler_demand", report.saler_demand)
 
     # Update additional comments & photos
     report.additional_comments = data.get(
-        "additional_comments", report.additional_comments)
+        "additional_comments", report.additional_comments
+    )
     report.car_photos = decoded_photos if decoded_photos else report.car_photos
 
     # Recalculate overall score (average of all condition fields)
     condition_fields = [
-        report.engine_condition, report.body_condition, report.clutch_condition,
-        report.steering_condition, report.suspension_condition, report.brakes_condition,
-        report.ac_condition, report.electrical_condition, report.tyres_condition
+        report.engine_condition,
+        report.body_condition,
+        report.clutch_condition,
+        report.steering_condition,
+        report.suspension_condition,
+        report.brakes_condition,
+        report.ac_condition,
+        report.electrical_condition,
+        report.tyres_condition,
     ]
     report.overall_score = sum(condition_fields) / len(condition_fields)
 
@@ -2413,8 +2497,83 @@ def update_inspection_report(request, report_id):
         status=status.HTTP_200_OK,
     )
 
+
 # INSPECTORS ADD TIME AND DATE MAKE SCHEDULE
 
+
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def add_availability(request):
+#     user = request.user
+
+#     if user.role.lower() != "inspector":
+#         return Response(
+#             {"message": "Only an inspector can add availability"}, status=403
+#         )
+#     data = request.data
+#     date_slots = data.get("dateSlots")
+
+#     if not date_slots or not isinstance(date_slots, list):
+#         return Response(
+#             {"message": "A list of date and slot pairs is required"}, status=400
+#         )
+
+#     for entry in date_slots:
+#         date_str = entry.get("date")
+#         slots = entry.get("slots")
+
+#         # Debugging log
+#         print(f"Processing entry -> Date: {date_str}, Slots: {slots}")
+
+#         if not date_str or not slots:
+#             return Response(
+#                 {"message": "Each entry must have a valid date and slots"}, status=400
+#             )
+
+#         try:
+#             current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+#             # Debugging log
+#             print(f"Parsed date (before conversion): {current_date}")
+#         except ValueError:
+#             return Response(
+#                 {"message": "Invalid date format. Use YYYY-MM-DD"}, status=400
+#             )
+
+#         server_time = localtime(now()).date()
+
+#         if current_date < server_time:
+#             return Response({"message": "Cannot add slots for past dates"}, status=400)
+
+#         valid_slots = set()
+#         for slot in slots:
+#             try:
+#                 if "AM" in slot.upper() or "PM" in slot.upper():
+#                     slot_time = datetime.strptime(slot, "%I:%M %p").time()
+#                 else:
+#                     slot_time = datetime.strptime(slot, "%H:%M").time()
+
+#                 valid_slots.add(slot_time.strftime("%H:%M"))
+#             except ValueError:
+#                 return Response(
+#                     {
+#                         "message": f"Invalid time format: {slot}. Use HH:MM or 12-hour format (e.g., 2:30 PM)"
+#                     },
+#                     status=400,
+#                 )
+
+#         availability, created = Availability.objects.get_or_create(
+#             inspector=user, date=current_date
+#         )
+
+#         existing_slots = (
+#             set(availability.time_slots) if availability.time_slots else set()
+#         )
+#         updated_slots = list(existing_slots.union(valid_slots))
+
+#         availability.time_slots = updated_slots
+#         availability.save()
+
+#     return Response({"message": "Availability slots added successfully"}, status=201)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -2423,72 +2582,74 @@ def add_availability(request):
 
     if user.role.lower() != "inspector":
         return Response(
-            {"message": "Only an inspector can add availability"}, status=403)
+            {"message": "Only an inspector can add availability."}, status=403
+        )
+
     data = request.data
     date_slots = data.get("dateSlots")
 
     if not date_slots or not isinstance(date_slots, list):
         return Response(
-            {"message": "A list of date and slot pairs is required"}, status=400
+            {"message": "A list of date and slot pairs is required."}, status=400
         )
 
-    for entry in date_slots:
-        date_str = entry.get("date")
-        slots = entry.get("slots")
+    try:
+        for entry in date_slots:
+            date_str = entry.get("date")
+            slots = entry.get("slots")
 
-        # Debugging log
-        print(f"Processing entry -> Date: {date_str}, Slots: {slots}")
-
-        if not date_str or not slots:
-            return Response(
-                {"message": "Each entry must have a valid date and slots"}, status=400
-            )
-
-        try:
-            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            # Debugging log
-            print(f"Parsed date (before conversion): {current_date}")
-        except ValueError:
-            return Response(
-                {"message": "Invalid date format. Use YYYY-MM-DD"}, status=400
-            )
-
-        server_time = localtime(now()).date()
-
-        if current_date < server_time:
-            return Response({"message": "Cannot add slots for past dates"}, status=400)
-
-        valid_slots = set()
-        for slot in slots:
-            try:
-                if "AM" in slot.upper() or "PM" in slot.upper():
-                    slot_time = datetime.strptime(slot, "%I:%M %p").time()
-                else:
-                    slot_time = datetime.strptime(slot, "%H:%M").time()
-
-                valid_slots.add(slot_time.strftime("%H:%M"))
-            except ValueError:
+            if not date_str or not slots or not isinstance(slots, list):
                 return Response(
-                    {
-                        "message": f"Invalid time format: {slot}. Use HH:MM or 12-hour format (e.g., 2:30 PM)"
-                    },
-                    status=400,
+                    {"message": "Each entry must have a valid 'date' and a list of 'slots'."}, status=400
                 )
 
-        availability, created = Availability.objects.get_or_create(
-            inspector=user, date=current_date
+            try:
+                current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return Response(
+                    {"message": f"Invalid date format: {date_str}. Use YYYY-MM-DD."}, status=400
+                )
+
+            if current_date < localtime(now()).date():
+                return Response(
+                    {"message": "Cannot add slots for past dates."}, status=400
+                )
+
+            valid_slots = set()
+            for slot in slots:
+                try:
+                    # store 12 hrs foramt 
+                    parsed_time = datetime.strptime(slot.strip(), "%I:%M %p")
+                    formatted_slot = parsed_time.strftime("%I:%M %p")
+                    valid_slots.add(formatted_slot)
+                except ValueError:
+                    return Response(
+                        {
+                            "message": f"Invalid time format: {slot}. Use 12-hour format (e.g., 2:30 PM)."
+                        },
+                        status=400,
+                    )
+
+            availability, _ = Availability.objects.get_or_create(
+                inspector=user, date=current_date
+            )
+
+            existing_slots = set(availability.time_slots or [])
+            updated_slots = list(existing_slots.union(valid_slots))
+
+            availability.time_slots = sorted(updated_slots)
+            availability.save()
+
+        return Response(
+            {"message": "Availability slots added successfully."}, status=201
         )
 
-        existing_slots = (
-            set(availability.time_slots) if availability.time_slots else set()
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return Response(
+            {"message": "An unexpected error occurred. Please try again later."},
+            status=500,
         )
-        updated_slots = list(existing_slots.union(valid_slots))
-
-        availability.time_slots = updated_slots
-        availability.save()
-
-    return Response({"message": "Availability slots added successfully"}, status=201)
-
 # when seller select slot
 
 
@@ -2505,103 +2666,114 @@ def get_seller_appointment_notification(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# get free and reserved slot
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_free_slots(request):
-    date = request.query_params.get("date", None)
-    inspector_id = request.query_params.get("inspector", None)
+    try:
+        date = request.query_params.get("date", None)
+        inspector_id = request.query_params.get("inspector", None)
 
-    if not inspector_id:
-        return Response({"message": "Inspector ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not inspector_id:
+            return Response(
+                {"message": "Inspector ID is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-    if date:
-        try:
-            date_obj = datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError:
-            return Response({"message": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        date_obj = None
+        if date:
+            try:
+                date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+            except ValueError:
+                return Response(
+                    {"message": "Invalid date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            date_obj = None
 
-    availability_queryset = Availability.objects.filter(
-        inspector_id=inspector_id)
-    if date_obj:
-        availability_queryset = availability_queryset.filter(date=date_obj)
+        availability_queryset = Availability.objects.filter(inspector_id=inspector_id)
+        if date_obj:
+            availability_queryset = availability_queryset.filter(date=date_obj)
 
-    if not availability_queryset.exists():
-        return Response({"message": "No availability records found for the given inspector and date."}, status=status.HTTP_404_NOT_FOUND)
+        if not availability_queryset.exists():
+            return Response(
+                {"message": "No availability records found for the given inspector and date."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-    reserved_slots_queryset = SelectedSlot.objects.filter(
-        inspector_id=inspector_id)
-    if date_obj:
-        reserved_slots_queryset = reserved_slots_queryset.filter(date=date_obj)
+        reserved_slots_queryset = SelectedSlot.objects.filter(inspector_id=inspector_id)
+        if date_obj:
+            reserved_slots_queryset = reserved_slots_queryset.filter(date=date_obj)
 
-    car_inspections = saler_car_details.objects.filter(
-        inspector__id=inspector_id)
+        car_inspections = saler_car_details.objects.filter(inspector__id=inspector_id)
+        if date_obj:
+            car_inspections = car_inspections.filter(inspection_date=date_obj)
 
-    if date_obj:
-        car_inspections = car_inspections.filter(inspection_date=date_obj)
+        taken_slots = set()
+        unique_reserved_slots = {}
 
-    taken_slots = set()
-    unique_reserved_slots = {}
-
-    # SelectedSlot entries
-    for slot in reserved_slots_queryset:
-        time_str = slot.time_slot.strftime("%H:%M")
-        taken_slots.add(time_str)
-
-        key = (slot.date, slot.inspector, time_str)
-        if key not in unique_reserved_slots:
-            unique_reserved_slots[key] = {
-                "source": "manual",
-                "slot_id": slot.id,
-                "date": slot.date.strftime("%Y-%m-%d"),
-                "inspector": slot.inspector.username,
-                "time_slot": time_str,
-            }
-
-    for car in car_inspections:
-        if car.inspection_time:
-            time_str = car.inspection_time.strftime("%H:%M")
+        # SelectedSlot entries
+        for slot in reserved_slots_queryset:
+            time_str = slot.time_slot.strftime("%H:%M")
             taken_slots.add(time_str)
 
-            key = (car.inspection_date, car.inspector, time_str)
+            key = (slot.date, slot.inspector, time_str)
             if key not in unique_reserved_slots:
                 unique_reserved_slots[key] = {
-
-                    "slot_id": {car.saler_car_id},
-                    "date": car.inspection_date.strftime("%Y-%m-%d"),
-                    "inspector": car.inspector.username if car.inspector else "",
+                    "source": "manual",
+                    "slot_id": slot.id,
+                    "date": slot.date.strftime("%Y-%m-%d"),
+                    "inspector": slot.inspector.username,
                     "time_slot": time_str,
-                    "car_name": car.car_name,
-                    "status": car.status,
                 }
 
-    reserved_slots = list(unique_reserved_slots.values())
+        for car in car_inspections:
+            if car.inspection_time:
+                time_str = car.inspection_time  # ✅ Already string like '10:30 AM'
+                taken_slots.add(time_str)
 
-    free_slots = []
-    for availability in availability_queryset:
-        available_time_slots = availability.time_slots
-        available_free_slots = [
-            str(slot) for slot in available_time_slots if str(slot) not in taken_slots]
+                key = (car.inspection_date, car.inspector, time_str)
+                if key not in unique_reserved_slots:
+                    unique_reserved_slots[key] = {
+                        "slot_id": car.saler_car_id,
+                        "date": car.inspection_date.strftime("%Y-%m-%d"),
+                        "inspector": car.inspector.username if car.inspector else "",
+                        "time_slot": time_str,
+                        "car_name": car.car_name,
+                        "status": car.status,
+                    }
 
-        for slot in available_free_slots:
-            free_slots.append({
-                "availability_id": availability.id,
-                "date": availability.date.strftime("%Y-%m-%d"),
-                "inspector": availability.inspector.username,
-                "time_slot": slot,
-            })
+        reserved_slots = list(unique_reserved_slots.values())
 
-    return Response(
-        {
-            "message": "Fetched slots successfully",
-            "free_slots": free_slots,
-            "reserved_slots": reserved_slots,
-        },
-        status=status.HTTP_200_OK,
-    )
+        free_slots = []
+        for availability in availability_queryset:
+            available_time_slots = availability.time_slots
+            available_free_slots = [
+                str(slot) for slot in available_time_slots if str(slot) not in taken_slots
+            ]
 
+            for slot in available_free_slots:
+                free_slots.append(
+                    {
+                        "availability_id": availability.id,
+                        "date": availability.date.strftime("%Y-%m-%d"),
+                        "inspector": availability.inspector.username,
+                        "time_slot": slot,
+                    }
+                )
+
+        return Response(
+            {
+                "message": "Fetched slots successfully",
+                "free_slots": free_slots,
+                "reserved_slots": reserved_slots,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        return Response(
+            {"message": f"An unexpected error occurred: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 # GET ALL SLOTS -----NOT USED
 @api_view(["GET"])
@@ -2624,8 +2796,7 @@ def get_available_slot(request):
 @permission_classes([IsAuthenticated])
 def mark_notifications_as_read(request):
     user = request.user
-    Notification.objects.filter(
-        recipient=user, is_read=False).update(is_read=True)
+    Notification.objects.filter(recipient=user, is_read=False).update(is_read=True)
     return Response(
         {"message": "Notifications marked as read"}, status=status.HTTP_200_OK
     )
@@ -2696,8 +2867,7 @@ def get_inspection_report(request):
     car_id = request.GET.get("car_id")
     if not car_id:
         return Response(
-            {"message": "Provide Car ID"},
-            status=status.HTTP_400_BAD_REQUEST
+            {"message": "Provide Car ID"}, status=status.HTTP_400_BAD_REQUEST
         )
     try:
         report = InspectionReport.objects.get(saler_car=car_id)
@@ -2713,6 +2883,8 @@ def get_inspection_report(request):
         report = InspectionReport.objects.filter(saler_car=car_id).first()
         serializer = InspectionReportSerializer(report)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 # @api_view(["GET"])
 # @permission_classes([IsAuthenticated])
 # def get_inspection_report(request):
@@ -2751,8 +2923,7 @@ def get_guest_car_details(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            inspector = User.objects.get(
-                id=inspector_id, role__iexact="Inspector")
+            inspector = User.objects.get(id=inspector_id, role__iexact="Inspector")
         except User.DoesNotExist:
             return Response(
                 {"error": "Invalid inspector ID"}, status=status.HTTP_400_BAD_REQUEST
@@ -2768,13 +2939,13 @@ def get_guest_car_details(request):
     except Exception as e:
         print(f"Error in get_guest_car_details: {e}")
         return Response(
-            {"success": False,
-                "message": f"Error retrieving assigned cars: {str(e)}"},
+            {"success": False, "message": f"Error retrieving assigned cars: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
 # ///////////////////////////DEALERS APIs/////////////////////////
+
 
 # bidding cars status for dealer and admin
 @api_view(["GET"])
@@ -2785,11 +2956,10 @@ def get_bidding_cars(request):
     if user.role not in ["dealer", "admin"]:
         return Response(
             {"message": "Only dealers or admins can view this"},
-            status=status.HTTP_403_FORBIDDEN
+            status=status.HTTP_403_FORBIDDEN,
         )
 
-    cars = saler_car_details.objects.select_related(
-        "user").filter(status="bidding")
+    cars = saler_car_details.objects.select_related("user").filter(status="bidding")
 
     if not cars.exists():
         return Response(
@@ -2810,7 +2980,8 @@ def get_bidding_cars(request):
 @permission_classes([IsAuthenticated])
 def get_upcoming_cars(request):
     cars = saler_car_details.objects.filter(
-        Q(status="pending") | Q(status="in_inspection"))
+        Q(status="pending") | Q(status="in_inspection")
+    )
     # print(f"UPCOMING CARS : {len(cars)}")
     if not cars.exists():
         return Response(
@@ -2838,8 +3009,7 @@ def place_bid(request):
 
     data = request.data
     try:
-        saler_car = saler_car_details.objects.get(
-            saler_car_id=data["saler_car"])
+        saler_car = saler_car_details.objects.get(saler_car_id=data["saler_car"])
     except saler_car_details.DoesNotExist:
         return Response({"message": "Car not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -2872,6 +3042,7 @@ def place_bid(request):
         status=status.HTTP_201_CREATED,
     )
 
+
 # DEALER CAN VIEW THEIR OWN BIDS
 
 
@@ -2896,17 +3067,23 @@ def view_dealer_bids(request):
 
 
 # dealer inventory API
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dealer_inventory(request):
     user = request.user
     if user.role != "dealer":
-        return Response({"message": "unauthorized cannot access this resource"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"message": "unauthorized cannot access this resource"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     cars = saler_car_details.objects.filter(winner_dealer=user)
 
     serializer = SalerCarDetailsSerializer(cars, many=True)
-    return Response({"message": "success", "cars": serializer.data}, status=status.HTTP_200_OK)
+    return Response(
+        {"message": "success", "cars": serializer.data}, status=status.HTTP_200_OK
+    )
+
 
 # ///////////////////////////////////GUEST APIs////////////////////////////////////////////
 
@@ -3001,7 +3178,8 @@ def guest_add_car_details(request):
                 inspector = User.objects.get(id=inspector_id, role="inspector")
             except User.DoesNotExist:
                 return Response(
-                    {"error": "Invalid Inspector ID."}, status=status.HTTP_400_BAD_REQUEST
+                    {"error": "Invalid Inspector ID."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         # Remove extra fields not in serializer
@@ -3018,7 +3196,7 @@ def guest_add_car_details(request):
                     recipient=inspector,
                     message=f"You have been assigned to inspect the car '{car_details.car_name}' by guest user.",
                     saler_car=car_details,
-                    category="inspection_assignment"
+                    category="inspection_assignment",
                 )
 
             return Response(
@@ -3038,6 +3216,7 @@ def guest_add_car_details(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 # ////////////////////////////////////////////////////////other like status updating///////////////
 # saler posted car notifications get
 
@@ -3054,6 +3233,7 @@ def get_notifications(requet):
     serializer = NotificationSerializer(notification, many=True)
 
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 # about saler car
 
@@ -3110,10 +3290,11 @@ def update_is_manual(request, car_id):
     except saler_car_details.DoesNotExist:
         return Response({"message": "car not found"}, status=status.HTTP_404_NOT_FOUND)
 
+
 # on selecting slot
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def update_is_booked(request, car_id):
     try:
@@ -3167,8 +3348,7 @@ def seller_manual_entries(request):
 
         # Validate that the user is an inspector
         try:
-            inspector = User.objects.get(
-                id=inspector_id, role__iexact="Inspector")
+            inspector = User.objects.get(id=inspector_id, role__iexact="Inspector")
         except User.DoesNotExist:
             return Response(
                 {"error": "Invalid inspector ID"}, status=status.HTTP_400_BAD_REQUEST
@@ -3190,19 +3370,20 @@ def seller_manual_entries(request):
     except Exception as e:
         print(f"Error in seller_manual_entries: {e}")  # Debugging
         return Response(
-            {"success": False,
-                "message": f"Error retrieving linked cars: {str(e)}"},
+            {"success": False, "message": f"Error retrieving linked cars: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
 # is_inspected true
-@api_view(['POST'])
+@api_view(["POST"])
 def mark_as_inspected(request, car_id):
     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
     car.is_inspected = True
     car.save()
-    return Response({"message": "Car marked as inspected", "is_inspected": car.is_inspected})
+    return Response(
+        {"message": "Car marked as inspected", "is_inspected": car.is_inspected}
+    )
 
     # /////////////////////////////////////////////////////////////////////////////////////////////////
 

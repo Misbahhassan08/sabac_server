@@ -88,6 +88,7 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
     photos = serializers.ListField(
         child=serializers.URLField(), allow_null=True, required=False
     )
+    inspection_time = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = saler_car_details
