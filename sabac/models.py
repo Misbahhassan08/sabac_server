@@ -12,15 +12,13 @@ import copy
 class User(AbstractUser):
     email = models.EmailField(unique=True)
     Role_Choices = [
-        ('saler', 'Saler'),
-        ('dealer', 'Dealer'),
-        ('inspector', 'Inspector'),
-        ('admin', 'Admin')
+        ("saler", "Saler"),
+        ("dealer", "Dealer"),
+        ("inspector", "Inspector"),
+        ("admin", "Admin"),
     ]
-    role = models.CharField(
-        max_length=20, choices=Role_Choices, default='saler')
-    phone_number = models.CharField(
-        max_length=20, unique=True, null=True, blank=True)
+    role = models.CharField(max_length=20, choices=Role_Choices, default="saler")
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     adress = models.CharField(max_length=500)
     image = models.TextField(null=True, blank=True)
 
@@ -38,47 +36,59 @@ class Guest(models.Model):
 
 
 OPTION_CHOICES = [
-    ('basic', 'BASIC'),
-    ('mid_option', 'MID OPTION'),
-    ('full_option', 'FULL OPTION'),
-    ('i_dont_know', 'I DONT KNOW')
+    ("basic", "BASIC"),
+    ("mid_option", "MID OPTION"),
+    ("full_option", "FULL OPTION"),
+    ("i_dont_know", "I DONT KNOW"),
 ]
 
 PAINT_CHOICES = [
-    ('original_paint', 'ORIGINAL PAINT'),
-    ('partial_repaint', 'PARTIAL REPAINT'),
-    ('full_repaint', 'FULL REPAINT'),
-    ('i_dont_know', 'I DONT KNOW')
+    ("original_paint", "ORIGINAL PAINT"),
+    ("partial_repaint", "PARTIAL REPAINT"),
+    ("full_repaint", "FULL REPAINT"),
+    ("i_dont_know", "I DONT KNOW"),
 ]
 
 SPECIFICATON_OPTIONS = [
-    ('gcc_specs', 'GCC SPECS'),
-    ('non_specs', 'NON SPECS'),
-    ('i_dont_know', 'I DONT KNOW')
+    ("gcc_specs", "GCC SPECS"),
+    ("non_specs", "NON SPECS"),
+    ("i_dont_know", "I DONT KNOW"),
 ]
 
 
 class saler_car_details(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('assigned', 'Assigned'),
-        ('in_inspection', "In Inspection"),
-        ('await_approval', " Awating Approval"),
-        ('rejected', 'Rejected'),
-        ('bidding', 'In Bidding'),
-        ('expired', 'Expired'),
-        ('sold', 'Sold'),
+        ("pending", "Pending"),
+        ("assigned", "Assigned"),
+        ("in_inspection", "In Inspection"),
+        ("await_approval", " Awating Approval"),
+        ("rejected", "Rejected"),
+        ("bidding", "In Bidding"),
+        ("expired", "Expired"),
+        ("sold", "Sold"),
     ]
 
     saler_car_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             null=True, blank=True, related_name='owner_car')
-    inspector = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
-                                  blank=True, related_name="inspector_connected")  # New field
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name="owner_car"
+    )
+    inspector = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inspector_connected",
+    )  # New field
     winner_dealer = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="dealer_inventory_cars")
-    guest = models.ForeignKey(Guest, on_delete=models.SET_NULL,
-                              null=True, related_name="guest_owner_cars")  # Check this
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dealer_inventory_cars",
+    )
+    guest = models.ForeignKey(
+        Guest, on_delete=models.SET_NULL, null=True, related_name="guest_owner_cars"
+    )  # Check this
     is_sold = models.BooleanField(default=False)
     car_name = models.CharField(max_length=100)
     company = models.CharField(max_length=100)
@@ -89,16 +99,13 @@ class saler_car_details(models.Model):
     paint_condition = models.CharField(max_length=100, choices=PAINT_CHOICES)
     specs = models.CharField(max_length=100, choices=SPECIFICATON_OPTIONS)
     photos = models.JSONField(null=True, blank=True)
-    primary_phone_number = models.CharField(
-        max_length=15, null=True, blank=True)
-    secondary_phone_number = models.CharField(
-        max_length=15, null=True, blank=True)
+    primary_phone_number = models.CharField(max_length=15, null=True, blank=True)
+    secondary_phone_number = models.CharField(max_length=15, null=True, blank=True)
     inspection_date = models.DateField()
-    inspection_time = models.TimeField()
+    inspection_time = models.CharField(max_length=20 , null=True , blank=True) ##change 15/5/2025
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(
-        max_length=30, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="pending")
     is_inspected = models.BooleanField(default=False)
     added_by = models.CharField(max_length=50, blank=True, null=True)
     is_manual = models.BooleanField(default=False)
@@ -114,9 +121,9 @@ class saler_car_details(models.Model):
     def is_bidding_active(self):
         now_time = timezone.now()
         return (
-            self.bidding_start_time and
-            self.bidding_end_time and
-            self.bidding_start_time <= now_time <= self.bidding_end_time
+            self.bidding_start_time
+            and self.bidding_end_time
+            and self.bidding_start_time <= now_time <= self.bidding_end_time
         )
 
     def save(self, *args, **kwargs):
@@ -136,14 +143,15 @@ class saler_car_details(models.Model):
             self.is_sold = True
 
         if (
-            self.status == "bidding" and
-            self.bidding_end_time and
-            now_time > self.bidding_end_time and
-            not self.is_sold
+            self.status == "bidding"
+            and self.bidding_end_time
+            and now_time > self.bidding_end_time
+            and not self.is_sold
         ):
             self.status = "expired"
 
         super().save(*args, **kwargs)
+
 
 # inspector availability model
 
@@ -152,47 +160,57 @@ class Availability(models.Model):
     inspector = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        limit_choices_to={'role': 'inspector'},
-        related_name='inspector')
+        limit_choices_to={"role": "inspector"},
+        related_name="inspector",
+    )
     date = models.DateField()
     time_slots = models.JSONField(default=list)
 
     def __str__(self):
         return f"{self.inspector.username} - {self.date}"
 
+
 # saler select the time for inspection
-
-
 class SelectedSlot(models.Model):
     saler_car = models.ForeignKey(
         saler_car_details,
-        on_delete=models.CASCADE, null=True, blank=True,
-        related_name='selected_slots')
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="selected_slots",
+    )
     inspector = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        limit_choices_to={'role': 'inspector'})
+        limit_choices_to={"role": "inspector"},
+    )
     date = models.DateField()
     time_slot = models.TimeField()
     BOOKED_BY_CHOICES = [
-        ('seler', 'Seller'),
-        ('inspector', 'Inspector'),
+        ("seler", "Seller"),
+        ("inspector", "Inspector"),
     ]
     booked_by = models.CharField(
-        max_length=10, choices=BOOKED_BY_CHOICES, default='seller')
+        max_length=10, choices=BOOKED_BY_CHOICES, default="seller"
+    )
 
 
 class InspectionReport(models.Model):
     inspector = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, limit_choices_to={'role': 'inspector'})
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        limit_choices_to={"role": "inspector"},
+    )
     saler_car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE, related_name='inspection_reports')
+        saler_car_details, on_delete=models.CASCADE, related_name="inspection_reports"
+    )
     json_obj = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)
 
-    # approve inspection
+    # approve inspection////
 
     def approve_inspection(self):
         if self.saler_car.status == "await_approval":
@@ -207,13 +225,14 @@ class InspectionReport(models.Model):
                 recipient=self.saler_car.user,
                 message=f"Your car {self.saler_car.car_name} has been Approved for bidding",
                 saler_car=self.saler_car,
-                category="inspection_approved"
+                category="inspection_approved",
             )
+
     # reject inspection
 
     def reject_inspection(self):
         if self.saler_car.status == "await_approval":
-            self.saler_car.status = "rejected",
+            self.saler_car.status = ("rejected",)
             self.saler_car.save()
 
             self.is_rejected = True
@@ -224,7 +243,7 @@ class InspectionReport(models.Model):
                 recipient=self.saler_car.user,
                 message=f"Your car {self.saler_car.car_name} has been rejected for bidding",
                 saler_car=self.saler_car,
-                category="inspection_rejected"
+                category="inspection_rejected",
             )
 
     def __str__(self):
@@ -233,37 +252,58 @@ class InspectionReport(models.Model):
 
 # Bidding model
 class Bidding(models.Model):
-    dealer = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={
-                               'role': 'dealer'}, related_name='bids')
+    dealer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        limit_choices_to={"role": "dealer"},
+        related_name="bids",
+    )
     saler_car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE, related_name='bids')
+        saler_car_details, on_delete=models.CASCADE, related_name="bids"
+    )
     bid_amount = models.DecimalField(max_digits=65, decimal_places=2)
     bid_date = models.DateField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=[
-        ('pending', 'Pending'),
-        ('accepted', 'Accepted'),
-        ('rejected', 'Rejected'),
-        ('expired', 'Expired')
-    ], default='pending')
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("accepted", "Accepted"),
+            ("rejected", "Rejected"),
+            ("expired", "Expired"),
+        ],
+        default="pending",
+    )
 
     def __str__(self):
         return f"Dealer :{self.dealer.username}"
+
 
 # notification model for saler car posting
 
 
 class Notification(models.Model):
     recipient = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='notifecation')
-    bid = models.ForeignKey(Bidding, on_delete=models.CASCADE,
-                            null=True, blank=True, related_name="bid_acception")
+        User, on_delete=models.CASCADE, related_name="notifecation"
+    )
+    bid = models.ForeignKey(
+        Bidding,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="bid_acception",
+    )
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
     saler_car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE, related_name='notifications', null=True, blank=True)
+        saler_car_details,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
     category = models.CharField(max_length=150, null=True, blank=True)
 
     def __str__(self):
@@ -273,9 +313,11 @@ class Notification(models.Model):
 # notification when inspection report posted by inspector
 class InspectionReportNotification(models.Model):
     recepient = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="inspection_notification")
+        User, on_delete=models.CASCADE, related_name="inspection_notification"
+    )
     report = models.ForeignKey(
-        InspectionReport, on_delete=models.CASCADE, related_name='notification')
+        InspectionReport, on_delete=models.CASCADE, related_name="notification"
+    )
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -283,15 +325,16 @@ class InspectionReportNotification(models.Model):
 
 # (Inspector assign slot to seller --manual entry)
 
+
 class AssignSlot(models.Model):
     inspector = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        limit_choices_to={'role': 'inspector'},
-        related_name='assigning_slots'
+        User,
+        on_delete=models.CASCADE,
+        limit_choices_to={"role": "inspector"},
+        related_name="assigning_slots",
     )
     car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE,
-        related_name="assigned_slots"
+        saler_car_details, on_delete=models.CASCADE, related_name="assigned_slots"
     )
     date = models.DateField()
     time_slot = models.TimeField()
@@ -311,12 +354,12 @@ class AdditionalDetails(models.Model):
     def __str__(self):
         return f"{self.name}"
 
+
 # device id model
 
 
 class DeviceToken(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     device_id = models.CharField(max_length=300)
     token = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

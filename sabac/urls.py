@@ -81,7 +81,8 @@ from .views import (
     inspectorsList,
     adminList,
     get_all_bidding,
-    get_all_sold_cars
+    get_all_sold_cars,
+    bid_notification_for_seller
 
 
 )
@@ -291,6 +292,7 @@ urlpatterns = [
     path("adminList/", adminList, name="adminList"),
     path("get_all_bidding/", get_all_bidding, name="get_all_bidding"),
     path("live-cars/", get_all_sold_cars, name="get_all_sold_cars"),
+    path("bid_notification_for_seller/",bid_notification_for_seller,name="bid_notification_for_seller")
 
 
 
