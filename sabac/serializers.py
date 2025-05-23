@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 import uuid
 from django.core.files.base import ContentFile
 from rest_framework import serializers
@@ -114,6 +115,8 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             "bidding_end_time",
             "primary_phone_number",
             "secondary_phone_number",
+            "min_range",
+            "max_range",
             "added_by",
             "is_booked",
             "is_manual",
@@ -133,6 +136,14 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
                 "email": obj.guest.email,
             }
         return None
+    def validate_inspection_time(self, value):
+        if value:
+            try:
+                # Try parsing as 12-hour format
+                datetime.strptime(value.strip(), "%I:%M %p")
+            except ValueError:
+                raise serializers.ValidationError("Time must be in 12-hour format (e.g., 02:30 PM)")
+        return value
 
         # extra_kwargs = {'user': {'required': False, 'allow_null': True}}
 
