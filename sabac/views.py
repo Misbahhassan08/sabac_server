@@ -1111,6 +1111,7 @@ def add_car_details(request):
     try:
         user = request.user
         data = request.data.copy()
+        print("car data",data)
         data["user"] = user.id
         data["added_by"] = "seller"
 
@@ -1122,7 +1123,7 @@ def add_car_details(request):
 
             inspection_date = car_details.inspection_date.strftime("%Y-%m-%d")
             # inspection_time = car_details.inspection_time.strftime("%I:%M %p")
-            inspection_time = car_details.inspection_time 
+            inspection_time = car_details.inspection_time
 
 
             inspectors = User.objects.filter(role="inspector")

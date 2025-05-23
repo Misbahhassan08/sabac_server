@@ -112,6 +112,8 @@ class saler_car_details(models.Model):
     is_booked = models.BooleanField(default=False)
     bidding_start_time = models.DateTimeField(null=True, blank=True)
     bidding_end_time = models.DateTimeField(null=True, blank=True)
+    min_range = models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
+    max_range = models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
 
     def start_bidding(self):
         self.bidding_start_time = timezone.now()
