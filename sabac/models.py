@@ -26,15 +26,6 @@ class User(AbstractUser):
         return self.username
 
 
-class Guest(models.Model):
-    name = models.CharField(max_length=100)
-    number = models.CharField(max_length=30, unique=True)
-    email = models.CharField(max_length=100, unique=True)
-
-    def __str__(self):
-        return f"{self.name}"
-
-
 OPTION_CHOICES = [
     ("basic", "BASIC"),
     ("mid_option", "MID OPTION"),
@@ -86,9 +77,9 @@ class saler_car_details(models.Model):
         blank=True,
         related_name="dealer_inventory_cars",
     )
-    guest = models.ForeignKey(
-        Guest, on_delete=models.SET_NULL, null=True, related_name="guest_owner_cars"
-    )  # Check this
+    # guest = models.ForeignKey(
+    #     Guest, on_delete=models.SET_NULL, null=True, related_name="guest_owner_cars"
+    # )  # Check this
     is_sold = models.BooleanField(default=False)
     car_name = models.CharField(max_length=100)
     company = models.CharField(max_length=100)
@@ -112,8 +103,8 @@ class saler_car_details(models.Model):
     is_booked = models.BooleanField(default=False)
     bidding_start_time = models.DateTimeField(null=True, blank=True)
     bidding_end_time = models.DateTimeField(null=True, blank=True)
-    min_range = models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
-    max_range = models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
+    demand= models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
+
 
     def start_bidding(self):
         self.bidding_start_time = timezone.now()
@@ -155,9 +146,110 @@ class saler_car_details(models.Model):
         super().save(*args, **kwargs)
 
 
+
+# GUEST with car detail model
+class Guest(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("assigned", "Assigned"),
+        ("in_inspection", "In Inspection"),
+        ("await_approval", " Awating Approval"),
+        ("rejected", "Rejected"),
+        ("bidding", "In Bidding"),
+        ("expired", "Expired"),
+        ("sold", "Sold"),
+    ]   
+    name = models.CharField(max_length=100)
+    number = models.CharField(max_length=30)
+    email = models.CharField(max_length=100)
+    
+    # car_id = models.AutoField(primary_key=True)
+    inspector = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inspector_in_guest",
+    ) 
+    winner_dealer = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dealer_inventory",
+    )
+    is_sold = models.BooleanField(default=False)
+    car_name = models.CharField(max_length=100)
+    company = models.CharField(max_length=100)
+    year = models.CharField(max_length=20)
+    engine_size = models.CharField(max_length=20)
+    milage = models.CharField(max_length=100)
+    option_type = models.CharField(max_length=50, choices=OPTION_CHOICES)
+    paint_condition = models.CharField(max_length=100, choices=PAINT_CHOICES)
+    specs = models.CharField(max_length=100, choices=SPECIFICATON_OPTIONS)
+    photos = models.JSONField(null=True, blank=True)
+    inspection_date = models.DateField()
+    inspection_time = models.CharField(max_length=20 , null=True , blank=True) ##change 15/5/2025
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="pending")
+    is_inspected = models.BooleanField(default=False)
+    added_by = models.CharField(max_length=50, blank=True, null=True)
+    is_manual = models.BooleanField(default=False)
+    is_booked = models.BooleanField(default=False)
+    bidding_start_time = models.DateTimeField(null=True, blank=True)
+    bidding_end_time = models.DateTimeField(null=True, blank=True)
+    demand = models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
+
+
+    def start_bidding(self):
+        self.bidding_start_time = timezone.now()
+        self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
+        self.save()
+
+    def is_bidding_active(self):
+        now_time = timezone.now()
+        return (
+            self.bidding_start_time
+            and self.bidding_end_time
+            and self.bidding_start_time <= now_time <= self.bidding_end_time
+        )
+
+    def save(self, *args, **kwargs):
+        now_time = timezone.now()
+
+        if self.pk:
+            existing_car = saler_car_details.objects.get(pk=self.pk)
+
+            if existing_car.status != "bidding" and self.status == "bidding":
+                self.bidding_start_time = now_time
+                self.bidding_end_time = now_time + timedelta(days=10)
+
+            if existing_car.status == "in_inspection" and self.status == "bidding":
+                self.is_inspected = True
+
+        if self.status == "sold":
+            self.is_sold = True
+
+        if (
+            self.status == "bidding"
+            and self.bidding_end_time
+            and now_time > self.bidding_end_time
+            and not self.is_sold
+        ):
+            self.status = "expired"
+
+        super().save(*args, **kwargs)
+
+
+    def __str__(self):
+        return f"{self.name}"
+    
+    
+    
+    
+
 # inspector availability model
-
-
 class Availability(models.Model):
     inspector = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -186,11 +278,13 @@ class SelectedSlot(models.Model):
         on_delete=models.CASCADE,
         limit_choices_to={"role": "inspector"},
     )
+    guest = models.ForeignKey(Guest,on_delete=models.SET_NULL, null=True,blank=True)
     date = models.DateField()
     time_slot = models.TimeField()
     BOOKED_BY_CHOICES = [
         ("seler", "Seller"),
         ("inspector", "Inspector"),
+        ("guest", "Guest"),
     ]
     booked_by = models.CharField(
         max_length=10, choices=BOOKED_BY_CHOICES, default="seller"
