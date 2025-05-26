@@ -1111,7 +1111,7 @@ def add_car_details(request):
     try:
         user = request.user
         data = request.data.copy()
-        print("car data",data)
+        print("car data", data)
         data["user"] = user.id
         data["added_by"] = "seller"
 
@@ -1124,7 +1124,6 @@ def add_car_details(request):
             inspection_date = car_details.inspection_date.strftime("%Y-%m-%d")
             # inspection_time = car_details.inspection_time.strftime("%I:%M %p")
             inspection_time = car_details.inspection_time
-
 
             inspectors = User.objects.filter(role="inspector")
 
@@ -1349,9 +1348,7 @@ def saler_appointmet(request):
         serialized_appointments[i]["inspection_date"] = (
             appointment.inspection_date.strftime("%Y-%m-%d")
         )
-        serialized_appointments[i]["inspection_time"] = (
-            appointment.inspection_time
-        )
+        serialized_appointments[i]["inspection_time"] = appointment.inspection_time
 
     return Response(
         {
@@ -2062,9 +2059,7 @@ def inspector_appointments(request):
         serialized_appointments[i]["inspection_date"] = (
             appointment.inspection_date.strftime("%Y-%m-%d")
         )
-        serialized_appointments[i]["inspection_time"] = (
-            appointment.inspection_time
-        )
+        serialized_appointments[i]["inspection_time"] = appointment.inspection_time
 
     return Response(
         {
@@ -2576,6 +2571,7 @@ def update_inspection_report(request, report_id):
 
 #     return Response({"message": "Availability slots added successfully"}, status=201)
 
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_availability(request):
@@ -2601,14 +2597,18 @@ def add_availability(request):
 
             if not date_str or not slots or not isinstance(slots, list):
                 return Response(
-                    {"message": "Each entry must have a valid 'date' and a list of 'slots'."}, status=400
+                    {
+                        "message": "Each entry must have a valid 'date' and a list of 'slots'."
+                    },
+                    status=400,
                 )
 
             try:
                 current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             except ValueError:
                 return Response(
-                    {"message": f"Invalid date format: {date_str}. Use YYYY-MM-DD."}, status=400
+                    {"message": f"Invalid date format: {date_str}. Use YYYY-MM-DD."},
+                    status=400,
                 )
 
             if current_date < localtime(now()).date():
@@ -2619,7 +2619,7 @@ def add_availability(request):
             valid_slots = set()
             for slot in slots:
                 try:
-                    # store 12 hrs foramt 
+                    # store 12 hrs foramt
                     parsed_time = datetime.strptime(slot.strip(), "%I:%M %p")
                     formatted_slot = parsed_time.strftime("%I:%M %p")
                     valid_slots.add(formatted_slot)
@@ -2651,6 +2651,8 @@ def add_availability(request):
             {"message": "An unexpected error occurred. Please try again later."},
             status=500,
         )
+
+
 # when seller select slot
 
 
@@ -2676,7 +2678,8 @@ def get_free_slots(request):
 
         if not inspector_id:
             return Response(
-                {"message": "Inspector ID is required."}, status=status.HTTP_400_BAD_REQUEST
+                {"message": "Inspector ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if date:
@@ -2696,7 +2699,9 @@ def get_free_slots(request):
 
         if not availability_queryset.exists():
             return Response(
-                {"message": "No availability records found for the given inspector and date."},
+                {
+                    "message": "No availability records found for the given inspector and date."
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -2713,7 +2718,8 @@ def get_free_slots(request):
 
         # SelectedSlot entries
         for slot in reserved_slots_queryset:
-            time_str = slot.time_slot.strftime("%H:%M")
+            # Convert time_slot (a time object) to 12-hour format string
+            time_str = slot.time_slot.strftime("%I:%M %p")  # e.g. "01:00 PM"
             taken_slots.add(time_str)
 
             key = (slot.date, slot.inspector, time_str)
@@ -2726,9 +2732,17 @@ def get_free_slots(request):
                     "time_slot": time_str,
                 }
 
+        # Car inspections reserved times
         for car in car_inspections:
             if car.inspection_time:
-                time_str = car.inspection_time  # ✅ Already string like '10:30 AM'
+                # If inspection_time is string like "1:00 PM", parse then format
+                try:
+                    time_obj = datetime.strptime(car.inspection_time, "%I:%M %p").time()
+                except ValueError:
+                    # fallback if stored differently, try 24h
+                    time_obj = datetime.strptime(car.inspection_time, "%H:%M").time()
+
+                time_str = time_obj.strftime("%I:%M %p")
                 taken_slots.add(time_str)
 
                 key = (car.inspection_date, car.inspector, time_str)
@@ -2747,8 +2761,9 @@ def get_free_slots(request):
         free_slots = []
         for availability in availability_queryset:
             available_time_slots = availability.time_slots
+            # Filter out taken slots by matching 12-hour format strings
             available_free_slots = [
-                str(slot) for slot in available_time_slots if str(slot) not in taken_slots
+                slot for slot in available_time_slots if slot not in taken_slots
             ]
 
             for slot in available_free_slots:
@@ -3158,65 +3173,70 @@ def guest_add_car_details(request):
         data = request.data.copy()
         data["added_by"] = "guest"
 
-        guest_id = data.get("guest_id")
-        inspector_id = data.get("inspector_id")  # <-- NEW
-
-        if not guest_id:
-            return Response(
-                {"error": "Guest ID is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            guest = Guest.objects.get(id=guest_id)
-        except Guest.DoesNotExist:
-            return Response(
-                {"error": "Invalid Guest ID."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
+        inspector_id = data.get("inspector_id")
         inspector = None
+
         if inspector_id:
             try:
                 inspector = User.objects.get(id=inspector_id, role="inspector")
+                data["inspector"] = inspector.id
             except User.DoesNotExist:
                 return Response(
                     {"error": "Invalid Inspector ID."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        # Remove extra fields not in serializer
-        data.pop("guest_id", None)
-        data.pop("inspector_id", None)
+        guest_serializer = GuestSerializer(data=data)
+        if guest_serializer.is_valid():
+            guest = guest_serializer.save()
 
-        serializer = SalerCarDetailsSerializer(data=data)
-        if serializer.is_valid():
-            car_details = serializer.save(guest=guest, inspector=inspector)
+            # Create SelectedSlot entry to reserve that slot
+            if inspector and guest.inspection_time and guest.inspection_date:
+                # Convert inspection_time (string) to time object
+                try:
+                    # Assuming inspection_time is like '12:55 PM'
+                    parsed_time = datetime.strptime(guest.inspection_time, "%I:%M %p").time()
+                except ValueError:
+                    return Response(
+                        {"error": "Invalid inspection_time format. Expected format: 'HH:MM AM/PM'."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-            # Create notification for inspector
+                SelectedSlot.objects.create(
+                    inspector=inspector,
+                    date=guest.inspection_date,
+                    time_slot=parsed_time,
+                    guest=guest,
+                    booked_by="guest",  # make sure 'guest' is in your BOOKED_BY_CHOICES
+                )
+
+            # Send notification to assigned inspector
             if inspector:
                 Notification.objects.create(
                     recipient=inspector,
-                    message=f"You have been assigned to inspect the car '{car_details.car_name}' by guest user.",
-                    saler_car=car_details,
+                    message=(
+                        f"You have been assigned to inspect the car '{guest.car_name}' "
+                        f"from guest '{guest.name}' on {guest.inspection_date} at {guest.inspection_time}."
+                    ),
                     category="inspection_assignment",
                 )
 
             return Response(
                 {
-                    "message": "Car added successfully!",
-                    "car_id": car_details.saler_car_id,
+                    "message": "Guest and car details submitted successfully.",
+                    "data": guest_serializer.data,
                 },
                 status=status.HTTP_201_CREATED,
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(guest_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
         print(f"Error in guest_add_car_details view: {str(e)}")
         return Response(
-            {"success": False, "message": "An error occurred while adding car details"},
+            {"success": False, "message": "An error occurred while saving guest details."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
 
 # ////////////////////////////////////////////////////////other like status updating///////////////
 # saler posted car notifications get

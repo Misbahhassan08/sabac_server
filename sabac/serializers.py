@@ -126,16 +126,6 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             "seller",
         ]
         read_only_fields = ["status", "is_sold"]
-
-    def get_guest(self, obj):
-        """Retrieve guest details"""
-        if obj.guest:
-            return {
-                "name": obj.guest.name,
-                "number": obj.guest.number,
-                "email": obj.guest.email,
-            }
-        return None
     def validate_inspection_time(self, value):
         if value:
             try:
@@ -222,7 +212,7 @@ class SelectedSlotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SelectedSlot
-        fields = ["id", "saler_car_details", "saler_detail", "date", "time_slot"]
+        fields = ["id", "saler_car_details", "saler_detail", "date", "time_slot","guest"]
 
     def get_saler_car_details(self, obj):
         return {
@@ -407,11 +397,88 @@ class AdditionalDetailSerializer(serializers.ModelSerializer):
         fields = ["name", "number"]
 
 
+
+
 class GuestSerializer(serializers.ModelSerializer):
+    inspector_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="inspector"),
+        source="inspector",
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    inspector = serializers.SerializerMethodField()
+
+    photos = serializers.ListField(
+        child=serializers.URLField(),
+        required=False,
+        allow_null=True
+    )
+
     class Meta:
         model = Guest
+        fields = [
+            "id",
+            "name",
+            "number",
+            "email",
+            "inspector_id",
+            "inspector",
+            "winner_dealer", 
+            "car_name",
+            "company",
+            "year",
+            "engine_size",
+            "milage",
+            "option_type",
+            "paint_condition",
+            "specs",
+            "photos",
+            "inspection_date",
+            "inspection_time",
+            "status",
+            "is_inspected",
+            "is_sold",
+            "is_manual",
+            "is_booked",
+            "added_by",
+            "bidding_start_time",
+            "bidding_end_time",
+            "demand",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "status",
+            "is_sold",
+            "is_inspected",
+            "created_at",
+            "updated_at",
+            "bidding_start_time",
+            "bidding_end_time",
+            "inspector",
+        ]
 
-        fields = ["name", "number", "email"]
+    def get_inspector(self, obj):
+        if obj.inspector:
+            return {
+                "id": obj.inspector.id,
+                "name": obj.inspector.get_full_name() or obj.inspector.username,
+                "email": obj.inspector.email
+            }
+        return None
+
+    def validate_inspection_time(self, value):
+        if value:
+            try:
+                datetime.strptime(value.strip(), "%I:%M %p")  # 12-hour format
+            except ValueError:
+                raise serializers.ValidationError("Time must be in 12-hour format, e.g., '02:30 PM'.")
+        return value
+        
+        
+
 
 
 class CarListingSerializer(serializers.ModelSerializer):
