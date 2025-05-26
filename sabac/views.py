@@ -1868,9 +1868,7 @@ def update_ad(request, car_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Assign inspector to a car (Guest or Seller) ON CALL
-
-
+# Assign inspector to a car (Seller) ON CALL
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def assign_inspector_to_car(request):
@@ -3238,6 +3236,54 @@ def guest_add_car_details(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
+
+# assigning inspector to guest car for manual entry
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def assign_inspector_to_guest_car(request):
+    try:
+        print("Incoming request data:", request.data)
+
+        guest_id = request.data.get("guest_id")
+        inspector_id = request.data.get("inspector_id")
+
+        if not guest_id or not inspector_id:
+            return Response(
+                {"error": "Guest ID and Inspector ID are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            inspector = User.objects.get(id=inspector_id, role="inspector")
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Invalid inspector selected."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            guest = Guest.objects.get(id=guest_id)
+        except Guest.DoesNotExist:
+            return Response(
+                {"error": "Guest record not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        guest.inspector = inspector
+        guest.save()
+
+        return Response(
+            {"message": "Inspector assigned to guest successfully!"},
+            status=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        print(f"Error in assign_inspector_to_guest_car: {e}")
+        return Response(
+            {"success": False, "message": f"An error occurred: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 # ////////////////////////////////////////////////////////other like status updating///////////////
 # saler posted car notifications get
 

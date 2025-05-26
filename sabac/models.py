@@ -278,7 +278,7 @@ class SelectedSlot(models.Model):
         on_delete=models.CASCADE,
         limit_choices_to={"role": "inspector"},
     )
-    guest = models.ForeignKey(Guest,on_delete=models.SET_NULL, null=True,blank=True)
+    unreg_guest = models.ForeignKey(Guest,on_delete=models.SET_NULL, null=True,blank=True)
     date = models.DateField()
     time_slot = models.TimeField()
     BOOKED_BY_CHOICES = [
