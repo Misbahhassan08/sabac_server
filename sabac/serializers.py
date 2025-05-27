@@ -212,7 +212,7 @@ class SelectedSlotSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SelectedSlot
-        fields = ["id", "saler_car_details", "saler_detail", "date", "time_slot","guest"]
+        fields = ["id", "saler_car_details", "saler_detail", "date", "time_slot","unreg_guest"]
 
     def get_saler_car_details(self, obj):
         return {

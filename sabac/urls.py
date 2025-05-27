@@ -82,7 +82,8 @@ from .views import (
     adminList,
     get_all_bidding,
     get_all_sold_cars,
-    bid_notification_for_seller
+    bid_notification_for_seller,
+    assign_inspector_to_guest_car
 
 
 )
@@ -292,7 +293,8 @@ urlpatterns = [
     path("adminList/", adminList, name="adminList"),
     path("get_all_bidding/", get_all_bidding, name="get_all_bidding"),
     path("live-cars/", get_all_sold_cars, name="get_all_sold_cars"),
-    path("bid_notification_for_seller/",bid_notification_for_seller,name="bid_notification_for_seller")
+    path("bid_notification_for_seller/",bid_notification_for_seller,name="bid_notification_for_seller"),
+    path("assign_inspector_to_guest_car/",assign_inspector_to_guest_car,name="assign_inspector_to_guest_car")
 
 
 
