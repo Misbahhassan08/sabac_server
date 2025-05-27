@@ -3245,7 +3245,7 @@ def assign_inspector_to_guest_car(request):
     try:
         print("Incoming request data:", request.data)
 
-        guest_id = request.data.get("guest_id")
+        guest_id = request.data.get("unreg_guest_id")
         inspector_id = request.data.get("inspector_id")
 
         if not guest_id or not inspector_id:
@@ -3284,6 +3284,11 @@ def assign_inspector_to_guest_car(request):
             {"success": False, "message": f"An error occurred: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
+
+
+
 # ////////////////////////////////////////////////////////other like status updating///////////////
 # saler posted car notifications get
 
