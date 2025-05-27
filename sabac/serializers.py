@@ -85,7 +85,6 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
         queryset=User.objects.filter(role="inspector"), allow_null=True, required=False
     )
     seller = UserSerializer(source="user", read_only=True)
-    guest = serializers.SerializerMethodField()
     photos = serializers.ListField(
         child=serializers.URLField(), allow_null=True, required=False
     )
@@ -96,7 +95,6 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
         fields = [
             "saler_car_id",
             "user",
-            "guest",
             "car_name",
             "company",
             "year",
