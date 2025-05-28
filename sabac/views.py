@@ -3038,7 +3038,7 @@ def guest_add_car_details(request):
                     inspector=inspector,
                     date=guest.inspection_date,
                     time_slot=parsed_time,
-                    guest=guest,
+                    unreg_guest=guest,
                     booked_by="guest", 
                 )
             if inspector:
@@ -3139,7 +3139,9 @@ def get_inspector_appointmnet_by_guest(request):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        guest_cars = Guest.objects.filter(inspector=inspector,is_manual=False)
+        guest_cars = Guest.objects.filter(inspector_id=inspector.id, is_manual=False)
+
+
 
         serializer = GuestSerializer(guest_cars, many=True)
         return Response({
@@ -3171,7 +3173,7 @@ def get_manual_guest_cars_for_inspector(request, inspector_id):
                 {"error": "Inspector not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        guests = Guest.objects.filter(inspector=inspector, is_manual=True)
+        guests = Guest.objects.filter(inspector_id=inspector.id, is_manual=True)
 
         serializer = GuestSerializer(guests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
