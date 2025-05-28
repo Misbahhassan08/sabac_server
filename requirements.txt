@@ -18,3 +18,7 @@ django-environ
 google-cloud-secret-manager
 django-storages
 google-auth
+cloudinary
+django-cloudinary-storage
+
+
