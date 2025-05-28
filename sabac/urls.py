@@ -44,7 +44,7 @@ from .views import (
     approve_inspection,
     get_cars_for_approval,
     mark_bid_notifications_as_read,
-    post_guest_details,
+    # post_guest_details,
     get_cars_count,
     update_is_manual,
     update_is_booked,
@@ -83,7 +83,12 @@ from .views import (
     get_all_bidding,
     get_all_sold_cars,
     bid_notification_for_seller,
-    assign_inspector_to_guest_car
+    assign_inspector_to_guest_car,
+    get_inspector_appointmnet_by_guest,
+    get_manual_guest_cars_for_inspector,
+    mark_guest_car_as_inspected,
+    post_guest_inspection_report,
+    delete_images
 
 
 )
@@ -214,9 +219,9 @@ urlpatterns = [
         mark_bid_notifications_as_read,
         name="mark_bid_notifications_as_read",
     ),
-    path(
-        "post_guest_details/", post_guest_details, name="post_guest_details"
-    ),  # guest add basic detail
+    # path(
+    #     "post_guest_details/", post_guest_details, name="post_guest_details"
+    # ),  # guest add basic detail
     path(
         "guest_add_car_details/", guest_add_car_details, name="guest_add_car_details"
     ),  # guest post car for sale
@@ -294,7 +299,13 @@ urlpatterns = [
     path("get_all_bidding/", get_all_bidding, name="get_all_bidding"),
     path("live-cars/", get_all_sold_cars, name="get_all_sold_cars"),
     path("bid_notification_for_seller/",bid_notification_for_seller,name="bid_notification_for_seller"),
-    path("assign_inspector_to_guest_car/",assign_inspector_to_guest_car,name="assign_inspector_to_guest_car")
+    path("assign_inspector_to_guest_car/",assign_inspector_to_guest_car,name="assign_inspector_to_guest_car"),
+    path("get_inspector_appointmnet_by_guest/",get_inspector_appointmnet_by_guest,name="get_inspector_appointmnet_by_guest"),
+    path("get_manual_guest_cars_for_inspector/",get_manual_guest_cars_for_inspector,name="get_manual_guest_cars_for_inspector"),
+    path("mark_guest_car_as_inspected/<int:id>/",mark_guest_car_as_inspected,name="mark_guest_car_as_inspected"),
+    path("post_guest_inspection_report/",post_guest_inspection_report,name="post_guest_inspection_report"),
+    path("delete/",delete_images,name="delete_images"), #cloudinary delete view
+    
 
 
 

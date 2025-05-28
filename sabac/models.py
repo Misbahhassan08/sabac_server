@@ -188,7 +188,7 @@ class Guest(models.Model):
     paint_condition = models.CharField(max_length=100, choices=PAINT_CHOICES)
     specs = models.CharField(max_length=100, choices=SPECIFICATON_OPTIONS)
     photos = models.JSONField(null=True, blank=True)
-    inspection_date = models.DateField()
+    inspection_date = models.DateField(null=True,blank=True)
     inspection_time = models.CharField(max_length=20 , null=True , blank=True) ##change 15/5/2025
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -301,12 +301,12 @@ class InspectionReport(models.Model):
     saler_car = models.ForeignKey(
         saler_car_details, on_delete=models.CASCADE, related_name="inspection_reports"
     )
+    guest_car = models.ForeignKey(Guest , on_delete=models.CASCADE , related_name="guest_inspection_reports")
     json_obj = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)
     is_rejected = models.BooleanField(default=False)
 
-    # approve inspection////
 
     def approve_inspection(self):
         if self.saler_car.status == "await_approval":
@@ -323,6 +323,21 @@ class InspectionReport(models.Model):
                 saler_car=self.saler_car,
                 category="inspection_approved",
             )
+        elif self.guest_car and not self.guest_car.is_inspected:
+            self.guest_car.is_inspected = True
+            self.guest_car.save()
+
+            self.is_accepted = True
+            self.is_rejected = False
+            self.save()
+
+            # Notification.objects.create(
+            #     recipient=self.guest_car.user,  
+            #     message=f"Your guest car {self.guest_car.car_model} has been approved and marked as inspected.",
+            #     guest_car=self.guest_car,
+            #     category="guest_inspection_approved",
+            # )
+
 
     # reject inspection
 
@@ -341,6 +356,17 @@ class InspectionReport(models.Model):
                 saler_car=self.saler_car,
                 category="inspection_rejected",
             )
+        elif self.guest_car and not self.guest_car.is_inspected:
+            self.is_rejected = True
+            self.is_accepted = False
+            self.save()
+
+            # Notification.objects.create(
+            #     recipient=self.guest_car.user,
+            #     message=f"Your guest car {self.guest_car.car_model} has been rejected after inspection.",
+            #     guest_car=self.guest_car,
+            #     category="guest_inspection_rejected",
+            # )
 
     def __str__(self):
         return f"Inspection Report for {self.saler_car.car_name} by {self.inspector.username} on {self.created_at}"

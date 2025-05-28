@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 
+import cloudinary
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,8 +28,8 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','sabac-server-530056698.us-central1.run.app']
-CSRF_TRUSTED_ORIGINS = ['https://*']
+ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app"]
+CSRF_TRUSTED_ORIGINS = ["https://*"]
 
 
 # Application definition
@@ -41,10 +43,29 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-    'django.contrib.staticfiles',  # Make sure this is listed after corsheaders
-    'rest_framework_simplejwt',
-    "sabac"
+    "django.contrib.staticfiles",  # Make sure this is listed after corsheaders
+    "rest_framework_simplejwt",
+    "cloudinary",
+    "cloudinary_storage",
+    "sabac",
 ]
+
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": "dhut1eqjs",
+    "API_KEY": "951228446286662",
+    "API_SECRET": "nW4itNhexxcQMAF-75hseenbIS8",
+}
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+cloudinary.config(
+    cloud_name="dhut1eqjs",
+    api_key="951228446286662",
+    api_secret="nW4itNhexxcQMAF-75hseenbIS8",
+    secure=True,
+)
+
 
 CHANNEL_LAYERS = {
     "default": {
@@ -71,29 +92,28 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWS_CREDENTIALS = True
 
 
-
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
 }
 
-AUTH_USER_MODEL = 'sabac.User'
+AUTH_USER_MODEL = "sabac.User"
 
 ROOT_URLCONF = "sabac_project.urls"
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_COOKIE_AGE = 300  
+SESSION_COOKIE_AGE = 300
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=59),  
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),   
-    "ROTATE_REFRESH_TOKENS": True,          
-    "BLACKLIST_AFTER_ROTATION": True,     
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=59),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": "123456789",      
+    "SIGNING_KEY": "123456789",
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -184,6 +204,3 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
-
