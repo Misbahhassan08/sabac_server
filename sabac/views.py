@@ -3303,8 +3303,121 @@ def post_guest_inspection_report(request):
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# inspector post inspection report of guest cars
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def guest_inspection_report_post(request):
+    user = request.user
+    if user.role != "inspector":
+        return Response({"message" : "only inspector can post"},status=status.HTTP_403_FORBIDDEN)
+    
+    data = request.data
+    
+    guest_car_id = data.get("guest_car")
+    
+    if not guest_car_id:
+        return Response({"message" : "missing guest car in fields"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        car = Guest.objects.get(id=guest_car_id)
+    except Guest.DoesNotExist:
+        return Response({"message" : "not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = InspectionReportSerializer(data=data)
+    
+    if serializer.is_valid():
+        report = serializer.save(inspector=user, guest_car = car)
+        
+        return Response({
+            "message" : "inspection report submitted successfully",
+            "report": InspectionReportSerializer(report).data
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def post_guest_inspection_report_mob(request):
+    user = request.user
+    if user.role != "inspector":
+        return Response(
+            {"message": "Only inspectors can submit inspection reports."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    data = request.data
+    guest_car_id = data.get("guest_car")
+    if not guest_car_id:
+        return Response(
+            {"message": "Missing 'guest_car' field in request."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        car = Guest.objects.get(id=guest_car_id)
+    except Guest.DoesNotExist:
+        return Response(
+            {"message": "Guest car not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    json_obj = data.get("json_obj")
+    mobile_data = {
+        "basicInfo": json_obj.get("basicInfo", {}),
+        "techSpecs": json_obj.get("techSpecs", {}),
+        "bodyParts": json_obj.get("bodyParts", []),
+    }
+
+    merge_result = merge_json(my_default_json, mobile_data)
+
+    serializer_data = {**data, "json_obj": merge_result}
+
+    serializer = InspectionReportSerializer(data=serializer_data)
+    if serializer.is_valid():
+        report = serializer.save(inspector=user, guest_car=car)
+
+        # Optional Notification if guest user exists (enable only if needed)
+        # if car.user:
+        #     Notification.objects.create(
+        #         recipient=car.user,
+        #         message=f"Your guest car '{car.car_model}' has been inspected by {user.username}.",
+        #         category="guest_car_inspected",
+        #         guest_car=car,
+        #     )
+
+        return Response(
+            {
+                "message": "Guest car inspection report submitted successfully.",
+                "report": InspectionReportSerializer(report).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# guest car status update
+@api_view(['PATCH'])
+@permission_classes({IsAuthenticated})
+def update_car_status(request , guest_car_id):
+    
+    try:
+        guest_car = Guest.objects.get(id=guest_car_id)
+        new_status = request.data.get("status")
+        
+        valid_status = dict(Guest.STATUS_CHOICES).keys()
+        if new_status not in valid_status:
+            return Response({"message":"invalid status"},status=status.HTTP_400_BAD_REQUEST)
+        
+        guest_car.status = new_status
+        guest_car.save()
+        return Response({
+            "message" : "status updated successfully",
+            "new_status": guest_car.status
+        },status=status.HTTP_200_OK)
+    except Guest.DoesNotExist:
+        return Response({"message" : "not found"},status=status.HTTP_404_NOT_FOUND)
+    
 
 
 

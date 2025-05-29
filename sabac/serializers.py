@@ -81,7 +81,7 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
     )
     is_sold = serializers.BooleanField(read_only=True)
     added_by = serializers.CharField(required=False, allow_blank=True)
-    inspector = serializers.PrimaryKeyRelatedField(
+    inspector_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role="inspector"), allow_null=True, required=False
     )
     seller = UserSerializer(source="user", read_only=True)
@@ -119,7 +119,7 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             "is_manual",
             "is_sold",
             "photos",
-            "inspector",
+            "inspector_id",
             "seller",
         ]
         read_only_fields = ["status", "is_sold"]

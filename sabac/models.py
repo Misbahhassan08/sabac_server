@@ -63,7 +63,7 @@ class saler_car_details(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True, related_name="owner_car"
     )
-    inspector = models.ForeignKey(
+    inspector_id = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
@@ -219,13 +219,14 @@ class Guest(models.Model):
         now_time = timezone.now()
 
         if self.pk:
-            existing_car = saler_car_details.objects.get(pk=self.pk)
+            # ✅ FIX: Use Guest instead of saler_car_details
+            existing_guest = Guest.objects.get(pk=self.pk)
 
-            if existing_car.status != "bidding" and self.status == "bidding":
+            if existing_guest.status != "bidding" and self.status == "bidding":
                 self.bidding_start_time = now_time
                 self.bidding_end_time = now_time + timedelta(days=10)
 
-            if existing_car.status == "in_inspection" and self.status == "bidding":
+            if existing_guest.status == "in_inspection" and self.status == "bidding":
                 self.is_inspected = True
 
         if self.status == "sold":
@@ -241,9 +242,6 @@ class Guest(models.Model):
 
         super().save(*args, **kwargs)
 
-
-    def __str__(self):
-        return f"{self.name}"
     
     
     
@@ -299,9 +297,9 @@ class InspectionReport(models.Model):
         limit_choices_to={"role": "inspector"},
     )
     saler_car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE, related_name="inspection_reports"
+        saler_car_details, on_delete=models.CASCADE,null=True,blank=True, related_name="inspection_reports"
     )
-    guest_car = models.ForeignKey(Guest , on_delete=models.CASCADE , related_name="guest_inspection_reports")
+    guest_car = models.ForeignKey(Guest , on_delete=models.CASCADE, null=True, blank=True, related_name="guest_inspection_reports")
     json_obj = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)

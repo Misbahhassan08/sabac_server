@@ -88,7 +88,10 @@ from .views import (
     get_manual_guest_cars_for_inspector,
     mark_guest_car_as_inspected,
     post_guest_inspection_report,
-    delete_images
+    delete_images,
+    guest_inspection_report_post,
+    post_guest_inspection_report_mob,
+    update_car_status
 
 
 )
@@ -305,6 +308,9 @@ urlpatterns = [
     path("mark_guest_car_as_inspected/<int:id>/",mark_guest_car_as_inspected,name="mark_guest_car_as_inspected"),
     path("post_guest_inspection_report/",post_guest_inspection_report,name="post_guest_inspection_report"),
     path("delete/",delete_images,name="delete_images"), #cloudinary delete view
+    path("guest_inspection_report_post/",guest_inspection_report_post,name="guest_inspection_report_post"),
+    path("post_guest_inspection_report_mob/",post_guest_inspection_report_mob,name="post_guest_inspection_report_mob"),
+    path("update_car_status/<int:guest_car_id>/",update_car_status,name="update_car_status")
     
 
 
