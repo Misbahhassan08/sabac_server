@@ -63,7 +63,7 @@ class saler_car_details(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True, related_name="owner_car"
     )
-    inspector_id = models.ForeignKey(
+    inspector = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
