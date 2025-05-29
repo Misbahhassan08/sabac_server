@@ -139,29 +139,29 @@ WSGI_APPLICATION = "sabac_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
-
-# Get environment variables (these should be set in Cloud Run)
-# INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
-# DB_USER = "misbah"
-# DB_PASS = "?5@1D9:lA_ex6p(%"
-# DB_NAME = "emsdb2"
-
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': DB_NAME,
-#         'USER': DB_USER,
-#         'PASSWORD': DB_PASS,
-#         'HOST': f'/cloudsql/{INSTANCE_CONNECTION_NAME}',  # This tells Django to connect via UNIX socket
-#         'PORT': '3306',
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
 #     }
 # }
+
+# Get environment variables (these should be set in Cloud Run)
+INSTANCE_CONNECTION_NAME = "myprojectems-435411:us-central1:emsdb"  # Format: project:region:instance
+DB_USER = "misbah"
+DB_PASS = "?5@1D9:lA_ex6p(%"
+DB_NAME = "emsdb2"
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASS,
+        'HOST': f'/cloudsql/{INSTANCE_CONNECTION_NAME}',  # This tells Django to connect via UNIX socket
+        'PORT': '3306',
+    }
+}
 
 
 # Password validation
