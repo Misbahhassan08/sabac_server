@@ -47,15 +47,15 @@ from .models import (
     DeviceToken,
 )
 from rest_framework import status
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.timezone import now
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 import logging
 from django.db.models import Max
 from rest_framework_simplejwt.tokens import RefreshToken
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 # login
@@ -190,7 +190,7 @@ def logout(request):
             token.blacklist()
         except Exception:
             return Response({"success": False, "error": "Invalid token"}, status=400)
-        
+
         DeviceToken.objects.filter(user=request.user, device_id=device_id).delete()
 
         response = Response({"success": True, "message": "Logged out successfully"})
@@ -308,26 +308,53 @@ def get_cars_for_approval(request):
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# accept inspection
+# ADMIN ACCEPT THE CAR INSPECTION REPORT OF SELLER & GUEST
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def approve_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
-    report.approve_inspection()
+
+    if report.saler_car and report.saler_car.status == "await_approval":
+        report.approve_inspection()
+        return Response(
+            {"message": "Seller car approved and moved to bidding"},
+            status=status.HTTP_200_OK,
+        )
+
+    elif report.guest_car and report.guest_car.status == "await_approval":
+        report.approve_inspection()
+        return Response(
+            {"message": "Guest car approved and moved to bidding"},
+            status=status.HTTP_200_OK,
+        )
+
     return Response(
-        {"message": "Car is Approved by admin, now in Bidding"},
-        status=status.HTTP_201_CREATED,
+        {"message": "Car is not in await_approval status or not linked properly"},
+        status=status.HTTP_400_BAD_REQUEST,
     )
 
 
-# reject inspection
+# ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER & GUEST
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reject_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
-    report.reject_inspection()
+
+    if report.saler_car and report.saler_car.status == "await_approval":
+        report.reject_inspection()
+        return Response(
+            {"message": "Seller car inspection rejected"}, status=status.HTTP_200_OK
+        )
+
+    elif report.guest_car and report.guest_car.status == "await_approval":
+        report.reject_inspection()
+        return Response(
+            {"message": "Guest car inspection rejected"}, status=status.HTTP_200_OK
+        )
+
     return Response(
-        {"message": "Car is rejected by admin"}, status=status.HTTP_201_CREATED
+        {"message": "Car is not in await_approval status or not linked properly"},
+        status=status.HTTP_400_BAD_REQUEST,
     )
 
 
@@ -478,9 +505,7 @@ def usersList(request):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        users = User.objects.all().only(
-            "id", "email", "role", "username"
-        ) 
+        users = User.objects.all().only("id", "email", "role", "username")
 
         serializer = UserSerializer(users, many=True)
 
@@ -525,7 +550,7 @@ def dealersList(request):
                 status=status.HTTP_403_FORBIDDEN,
             )
         users = User.objects.filter(role="dealer")
-        
+
         serializer = UserSerializer(users, many=True)
 
         return Response(
@@ -1348,7 +1373,7 @@ def saler_update(request):
     if "password" in data:
         password = data.get("password")
         if password:
-            user.set_password(password)  
+            user.set_password(password)
 
     try:
         user.save()
@@ -1402,7 +1427,7 @@ def delete_saler(request):
         return Response({"Error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# saler_register view
+# seller register
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def saler_register(request):
@@ -1416,8 +1441,11 @@ def saler_register(request):
             email=data.get("email"),
             password=data.get("password"),
             phone_number=data.get("phone_number"),
+            adress=data.get("adress"),  # ✅ include this
+            image=data.get("image"),  # ✅ include this
             role="saler",
         )
+
         return Response(
             {
                 "message": "User created successfully",
@@ -1427,6 +1455,8 @@ def saler_register(request):
                 "username": user.username,
                 "email": user.email,
                 "phone_number": user.phone_number,
+                "adress": user.adress,  # ✅ return it
+                "image": user.image,  # ✅ return it
                 "role": user.role,
             },
             status=status.HTTP_201_CREATED,
@@ -1735,8 +1765,6 @@ def delete_ad(request, car_id):
     return Response({"message": "car deleted successfully"}, status=status.HTTP_200_OK)
 
 
-
-
 # SELLER UPDATED ITS CAR DETAIL
 @api_view(["PUT", "PATCH"])
 @permission_classes([IsAuthenticated])
@@ -1927,7 +1955,7 @@ def inspector_appointments(request):
             {"message": "Only inspectors can view this data"},
             status=status.HTTP_403_FORBIDDEN,
         )
-        
+
     appointments = saler_car_details.objects.filter(
         inspector=user, user__isnull=False, is_manual=False
     ).order_by("inspection_date", "inspection_time")
@@ -1977,11 +2005,11 @@ def assign_slot(request):
 
     input_time = data.get("time_slot")
     try:
-        datetime.strptime(input_time, "%I:%M %p") 
+        datetime.strptime(input_time, "%I:%M %p")
     except (ValueError, TypeError):
         return Response(
             {"error": "Invalid time format. Use 12-hour format like '01:30 PM'."},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     serializer = AssignedSlotSerializer(data=data, context={"request": request})
@@ -2017,7 +2045,6 @@ def assign_slot(request):
     else:
         print("Errors:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 # MANUAL APPOINTMENT
@@ -2585,7 +2612,7 @@ def get_free_slots(request):
         unique_reserved_slots = {}
 
         for slot in reserved_slots_queryset:
-            time_str = slot.time_slot.strftime("%I:%M %p")  
+            time_str = slot.time_slot.strftime("%I:%M %p")
             taken_slots.add(time_str)
 
             key = (slot.date, slot.inspector, time_str)
@@ -2651,6 +2678,7 @@ def get_free_slots(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+
 # GET ALL SLOTS -----NOT USED
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -2685,7 +2713,7 @@ def get_selected_slots(request):
     user = request.user
     selected_slots = SelectedSlot.objects.filter(saler_car__user=user)
     serialized_slots = SelectedSlotSerializer(selected_slots, many=True)
-    
+
     return Response(
         {
             "message": "Fetched selected slots successfully",
@@ -2744,7 +2772,7 @@ def get_inspection_report(request):
             {"message": "No report found for this car"},
             status=status.HTTP_404_NOT_FOUND,
         )
-    except MultipleObjectsReturned:  # type: ignore
+    except Exception as e:  # type: ignore
         report = InspectionReport.objects.filter(saler_car=car_id).first()
         serializer = InspectionReportSerializer(report)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -2817,7 +2845,7 @@ def get_guest_car_details(request):
 @permission_classes([IsAuthenticated])
 def get_bidding_cars(request):
     user = request.user
-    
+
     if user.role not in ["dealer", "admin"]:
         return Response(
             {"message": "Only dealers or admins can view this"},
@@ -2843,15 +2871,16 @@ def get_bidding_cars(request):
 @permission_classes([IsAuthenticated])
 def get_upcoming_cars(request):
     cars = saler_car_details.objects.filter(
-        Q(status="pending") | Q(status="in_inspection")
+        Q(status="pending") | Q(status="in_inspection") | Q(status="await_approval")
     )
     if not cars.exists():
         return Response(
             {"Message": "No Upcoming cars Found!"}, status=status.HTTP_404_NOT_FOUND
         )
     serializer = SalerCarDetailsSerializer(cars, many=True)
-    
+
     return Response({"cars": serializer.data}, status=status.HTTP_200_OK)
+
 
 # DEALERS CAN PLACE BID
 @api_view(["POST"])
@@ -2929,7 +2958,7 @@ def dealer_inventory(request):
             status=status.HTTP_403_FORBIDDEN,
         )
     cars = saler_car_details.objects.filter(winner_dealer=user)
-    
+
     serializer = SalerCarDetailsSerializer(cars, many=True)
     return Response(
         {"message": "success", "cars": serializer.data}, status=status.HTTP_200_OK
@@ -3000,6 +3029,7 @@ def dealer_inventory(request):
 #             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
 #         )
 
+
 # GUEST POST AD
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -3007,7 +3037,7 @@ def guest_add_car_details(request):
     try:
         data = request.data.copy()
         data["added_by"] = "guest"
-        
+
         inspector_id = data.get("inspector_id")
         inspector = None
 
@@ -3027,10 +3057,14 @@ def guest_add_car_details(request):
 
             if inspector and guest.inspection_time and guest.inspection_date:
                 try:
-                    parsed_time = datetime.strptime(guest.inspection_time, "%I:%M %p").time()
+                    parsed_time = datetime.strptime(
+                        guest.inspection_time, "%I:%M %p"
+                    ).time()
                 except ValueError:
                     return Response(
-                        {"error": "Invalid inspection_time format. Expected format: 'HH:MM AM/PM'."},
+                        {
+                            "error": "Invalid inspection_time format. Expected format: 'HH:MM AM/PM'."
+                        },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
@@ -3039,7 +3073,7 @@ def guest_add_car_details(request):
                     date=guest.inspection_date,
                     time_slot=parsed_time,
                     unreg_guest=guest,
-                    booked_by="guest", 
+                    booked_by="guest",
                 )
             if inspector:
                 Notification.objects.create(
@@ -3064,10 +3098,12 @@ def guest_add_car_details(request):
     except Exception as e:
         print(f"Error in guest_add_car_details view: {str(e)}")
         return Response(
-            {"success": False, "message": "An error occurred while saving guest details."},
+            {
+                "success": False,
+                "message": "An error occurred while saving guest details.",
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
 
 
 # assigning inspector to guest car for manual entry
@@ -3102,7 +3138,7 @@ def assign_inspector_to_guest_car(request):
             )
 
         guest.inspector = inspector
-        guest.is_manual=True,
+        guest.is_manual = (True,)
         guest.save()
 
         return Response(
@@ -3128,7 +3164,7 @@ def get_inspector_appointmnet_by_guest(request):
         if not inspector_id:
             return Response(
                 {"error": "Inspector ID is required as a query parameter."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -3136,34 +3172,34 @@ def get_inspector_appointmnet_by_guest(request):
         except User.DoesNotExist:
             return Response(
                 {"error": "Inspector not found or invalid role."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         guest_cars = Guest.objects.filter(inspector_id=inspector.id, is_manual=False)
 
-
-
         serializer = GuestSerializer(guest_cars, many=True)
-        return Response({
-            "inspector": {
-                "id": inspector.id,
-                "name": inspector.get_full_name() or inspector.username,
-                "email": inspector.email,
+        return Response(
+            {
+                "inspector": {
+                    "id": inspector.id,
+                    "name": inspector.get_full_name() or inspector.username,
+                    "email": inspector.email,
+                },
+                "guest_cars": serializer.data,
             },
-            "guest_cars": serializer.data
-        }, status=status.HTTP_200_OK)
+            status=status.HTTP_200_OK,
+        )
 
     except Exception as e:
         return Response(
             {"error": f"An error occurred: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
 
 
 # GUest manual entries for inspector
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])  
+@permission_classes([IsAuthenticated])
 def get_manual_guest_cars_for_inspector(request, inspector_id):
     try:
         try:
@@ -3183,9 +3219,9 @@ def get_manual_guest_cars_for_inspector(request, inspector_id):
             {"success": False, "message": "An error occurred."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-        
 
-#ASSIGN SLOT TO GUEST 
+
+# ASSIGN SLOT TO GUEST
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def assign_guest_slot(request):
@@ -3196,7 +3232,7 @@ def assign_guest_slot(request):
         if field not in data:
             return Response(
                 {"error": f"{field.replace('_', ' ').capitalize()} is required."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
     try:
@@ -3209,7 +3245,7 @@ def assign_guest_slot(request):
     except (ValueError, TypeError):
         return Response(
             {"error": "Invalid time format. Use 12-hour format like '01:30 PM'."},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
     guest.inspector = request.user
     guest.inspection_date = data["inspection_date"]
@@ -3219,7 +3255,9 @@ def assign_guest_slot(request):
     guest.save()
 
     try:
-        availability = Availability.objects.get(inspector=request.user, date=data["inspection_date"])
+        availability = Availability.objects.get(
+            inspector=request.user, date=data["inspection_date"]
+        )
         availability.time_slots = [
             slot.strftime("%I:%M %p") if isinstance(slot, datetime) else slot
             for slot in availability.time_slots
@@ -3233,17 +3271,20 @@ def assign_guest_slot(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    return Response({
-        "message": "Guest slot assigned successfully.",
-        "guest_id": guest.id,
-        "inspector": {
-            "id": request.user.id,
-            "name": request.user.get_full_name() or request.user.username,
-            "email": request.user.email,
+    return Response(
+        {
+            "message": "Guest slot assigned successfully.",
+            "guest_id": guest.id,
+            "inspector": {
+                "id": request.user.id,
+                "name": request.user.get_full_name() or request.user.username,
+                "email": request.user.email,
+            },
+            "inspection_date": guest.inspection_date,
+            "inspection_time": guest.inspection_time,
         },
-        "inspection_date": guest.inspection_date,
-        "inspection_time": guest.inspection_time
-    }, status=status.HTTP_200_OK)
+        status=status.HTTP_200_OK,
+    )
 
 
 # GUEST: is_inspected sets true
@@ -3256,83 +3297,93 @@ def mark_guest_car_as_inspected(request, id):
     return Response(
         {"message": "Car marked as inspected", "is_inspected": guest.is_inspected}
     )
-    
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def post_guest_inspection_report(request):
-    user = request.user
-    if user.role != "inspector":
-        return Response(
-            {"message": "Only inspectors can submit inspection reports."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
 
-    data = request.data
-    guest_id = data.get("guest_id")
-    if not guest_id:
-        return Response(
-            {"message": "Missing 'guest_id' field in request."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
-    try:
-        guest = Guest.objects.get(id=guest_id)
-    except Guest.DoesNotExist:
-        return Response(
-            {"message": "Guest not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def post_guest_inspection_report(request):
+#     user = request.user
+#     if user.role != "inspector":
+#         return Response(
+#             {"message": "Only inspectors can submit inspection reports."},
+#             status=status.HTTP_403_FORBIDDEN,
+#         )
 
-    serializer = InspectionReportSerializer(data=data)
-    if serializer.is_valid():
-        report = serializer.save(inspector=user, guest_car=guest)
+#     data = request.data
+#     guest_id = data.get("guest_id")
+#     if not guest_id:
+#         return Response(
+#             {"message": "Missing 'guest_id' field in request."},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
 
-        Notification.objects.create(
-            recipient=guest.user,  # If Guest has user field
-            message=f"Your car '{guest.car_model}' has been inspected by {user.username}.",
-            category="guest_car_inspected",
-        )
+#     try:
+#         guest = Guest.objects.get(id=guest_id)
+#     except Guest.DoesNotExist:
+#         return Response(
+#             {"message": "Guest not found."},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
 
-        return Response(
-            {
-                "message": "Guest car inspection report submitted successfully.",
-                "report": InspectionReportSerializer(report).data,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+#     serializer = InspectionReportSerializer(data=data)
+#     if serializer.is_valid():
+#         report = serializer.save(inspector=user, guest_car=guest)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         Notification.objects.create(
+#             recipient=guest.user,  # If Guest has user field
+#             message=f"Your car '{guest.car_model}' has been inspected by {user.username}.",
+#             category="guest_car_inspected",
+#         )
+
+#         return Response(
+#             {
+#                 "message": "Guest car inspection report submitted successfully.",
+#                 "report": InspectionReportSerializer(report).data,
+#             },
+#             status=status.HTTP_201_CREATED,
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 # inspector post inspection report of guest cars
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def guest_inspection_report_post(request):
     user = request.user
     if user.role != "inspector":
-        return Response({"message" : "only inspector can post"},status=status.HTTP_403_FORBIDDEN)
-    
+        return Response(
+            {"message": "only inspector can post"}, status=status.HTTP_403_FORBIDDEN
+        )
+
     data = request.data
-    
+
     guest_car_id = data.get("guest_car")
-    
+
     if not guest_car_id:
-        return Response({"message" : "missing guest car in fields"},status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(
+            {"message": "missing guest car in fields"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     try:
         car = Guest.objects.get(id=guest_car_id)
     except Guest.DoesNotExist:
-        return Response({"message" : "not found"},status=status.HTTP_404_NOT_FOUND)
-    
+        return Response({"message": "not found"}, status=status.HTTP_404_NOT_FOUND)
+
     serializer = InspectionReportSerializer(data=data)
-    
+
     if serializer.is_valid():
-        report = serializer.save(inspector=user, guest_car = car)
-        
-        return Response({
-            "message" : "inspection report submitted successfully",
-            "report": InspectionReportSerializer(report).data
-        }, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+        report = serializer.save(inspector=user, guest_car=car)
+
+        return Response(
+            {
+                "message": "inspection report submitted successfully",
+                "report": InspectionReportSerializer(report).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
@@ -3396,30 +3447,104 @@ def post_guest_inspection_report_mob(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# GET GUEST INSPECTION REPORT
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_inspection_report_guest(request):
+    car_id = request.GET.get("car_id")
+
+    if not car_id:
+        return Response(
+            {"message": "car id is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    try:
+        report = InspectionReport.objects.get(guest_car=car_id)
+        serializer = InspectionReportSerializer(report)
+        return Response({serializer.data}, status=status.HTTP_200_OK)
+    except InspectionReport.DoesNotExist:
+        return Response(
+            {"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    except Exception as e:
+        report = InspectionReport.objects.filter(guest_car=car_id).first()
+        if report:
+            serializer = InspectionReportSerializer(report)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "Unexpected error or no report found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+
 # guest car status update
-@api_view(['PATCH'])
+@api_view(["PATCH"])
 @permission_classes({IsAuthenticated})
-def update_car_status(request , guest_car_id):
-    
+def update_car_status(request, guest_car_id):
+
     try:
         guest_car = Guest.objects.get(id=guest_car_id)
         new_status = request.data.get("status")
-        
+
         valid_status = dict(Guest.STATUS_CHOICES).keys()
         if new_status not in valid_status:
-            return Response({"message":"invalid status"},status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"message": "invalid status"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         guest_car.status = new_status
         guest_car.save()
-        return Response({
-            "message" : "status updated successfully",
-            "new_status": guest_car.status
-        },status=status.HTTP_200_OK)
+        return Response(
+            {"message": "status updated successfully", "new_status": guest_car.status},
+            status=status.HTTP_200_OK,
+        )
     except Guest.DoesNotExist:
-        return Response({"message" : "not found"},status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "not found"}, status=status.HTTP_404_NOT_FOUND)
     
+    
+# upcoming cars from guest
+# get cars with status inspection for dealer and admin (upcoming)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_upcoming_cars_by_guest(request):
+    cars = Guest.objects.filter(
+        Q(status="pending") | Q(status="in_inspection") | Q(status="await_approval")
+    )
+    if not cars.exists():
+        return Response(
+            {"Message": "No Upcoming cars Found!"}, status=status.HTTP_404_NOT_FOUND
+        )
+    serializer = GuestSerializer(cars, many=True)
+
+    return Response({"cars": serializer.data}, status=status.HTTP_200_OK)
 
 
+# get live cars of guest
+# bidding cars status for dealer and admin
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_bidding_cars_by_guest(request):
+    user = request.user
+
+    if user.role not in ["dealer", "admin"]:
+        return Response(
+            {"message": "Only dealers or admins can view this"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    cars = Guest.objects.filter(status="bidding")
+
+    if not cars.exists():
+        return Response(
+            {"error": "No cars found in bidding status"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = GuestSerializer(cars, many=True)
+    return Response(
+        {"message": "Cars fetched successfully", "cars": serializer.data},
+        status=status.HTTP_200_OK,
+    )
 
 
 # ////////////////////////////////////////////////////////other like status updating///////////////
@@ -3562,7 +3687,7 @@ def seller_manual_entries(request):
         )
 
     except Exception as e:
-        print(f"Error in seller_manual_entries: {e}") 
+        print(f"Error in seller_manual_entries: {e}")
         return Response(
             {"success": False, "message": f"Error retrieving linked cars: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -3975,26 +4100,31 @@ def mark_as_inspected(request, car_id):
 #     )
 
 
-#cloudinary views
+# cloudinary views
+
 
 @csrf_exempt
 def delete_images(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             data = json.loads(request.body)
-            public_ids = data.get('public_ids')
+            public_ids = data.get("public_ids")
 
             if not public_ids or not isinstance(public_ids, list):
-                return JsonResponse({'error': 'public_ids (list) is required'}, status=400)
+                return JsonResponse(
+                    {"error": "public_ids (list) is required"}, status=400
+                )
 
             # Delete images from Cloudinary
             result = cloudinary.api.delete_resources(public_ids)
 
-            return JsonResponse({'message': 'Images deleted from Cloudinary', 'result': result})
+            return JsonResponse(
+                {"message": "Images deleted from Cloudinary", "result": result}
+            )
 
         except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({"error": str(e)}, status=500)
 
-    return JsonResponse({'error': 'POST method required'}, status=400)
+    return JsonResponse({"error": "POST method required"}, status=400)

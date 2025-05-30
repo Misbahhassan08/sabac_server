@@ -20,7 +20,8 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=Role_Choices, default="saler")
     phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     adress = models.CharField(max_length=500)
-    image = models.TextField(null=True, blank=True)
+    image = models.CharField(max_length=500, null=True, blank=True)
+
 
     def __str__(self):
         return self.username
@@ -307,7 +308,7 @@ class InspectionReport(models.Model):
 
 
     def approve_inspection(self):
-        if self.saler_car.status == "await_approval":
+        if self.saler_car and self.saler_car.status == "await_approval":
             self.saler_car.status = "bidding"
             self.saler_car.save()
 
@@ -321,7 +322,9 @@ class InspectionReport(models.Model):
                 saler_car=self.saler_car,
                 category="inspection_approved",
             )
-        elif self.guest_car and not self.guest_car.is_inspected:
+
+        elif self.guest_car and self.guest_car.status == "await_approval":
+            self.guest_car.status = "bidding"
             self.guest_car.is_inspected = True
             self.guest_car.save()
 
@@ -330,18 +333,16 @@ class InspectionReport(models.Model):
             self.save()
 
             # Notification.objects.create(
-            #     recipient=self.guest_car.user,  
-            #     message=f"Your guest car {self.guest_car.car_model} has been approved and marked as inspected.",
+            #     recipient=self.guest_car.user,
+            #     message=f"Your guest car {self.guest_car.car_name} has been approved for bidding",
             #     guest_car=self.guest_car,
             #     category="guest_inspection_approved",
             # )
 
 
-    # reject inspection
-
     def reject_inspection(self):
-        if self.saler_car.status == "await_approval":
-            self.saler_car.status = ("rejected",)
+        if self.saler_car and self.saler_car.status == "await_approval":
+            self.saler_car.status = "rejected"
             self.saler_car.save()
 
             self.is_rejected = True
@@ -354,14 +355,18 @@ class InspectionReport(models.Model):
                 saler_car=self.saler_car,
                 category="inspection_rejected",
             )
-        elif self.guest_car and not self.guest_car.is_inspected:
+
+        elif self.guest_car and self.guest_car.status == "await_approval":
+            self.guest_car.status = "rejected"
+            self.guest_car.save()
+
             self.is_rejected = True
             self.is_accepted = False
             self.save()
 
             # Notification.objects.create(
             #     recipient=self.guest_car.user,
-            #     message=f"Your guest car {self.guest_car.car_model} has been rejected after inspection.",
+            #     message=f"Your guest car {self.guest_car.car_name} has been rejected after inspection.",
             #     guest_car=self.guest_car,
             #     category="guest_inspection_rejected",
             # )

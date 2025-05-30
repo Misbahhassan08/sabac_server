@@ -87,11 +87,14 @@ from .views import (
     get_inspector_appointmnet_by_guest,
     get_manual_guest_cars_for_inspector,
     mark_guest_car_as_inspected,
-    post_guest_inspection_report,
+    # post_guest_inspection_report,
     delete_images,
     guest_inspection_report_post,
     post_guest_inspection_report_mob,
-    update_car_status
+    update_car_status,
+    get_inspection_report_guest,
+    get_upcoming_cars_by_guest,
+    get_bidding_cars_by_guest
 
 
 )
@@ -306,11 +309,14 @@ urlpatterns = [
     path("get_inspector_appointmnet_by_guest/",get_inspector_appointmnet_by_guest,name="get_inspector_appointmnet_by_guest"),
     path("get_manual_guest_cars_for_inspector/",get_manual_guest_cars_for_inspector,name="get_manual_guest_cars_for_inspector"),
     path("mark_guest_car_as_inspected/<int:id>/",mark_guest_car_as_inspected,name="mark_guest_car_as_inspected"),
-    path("post_guest_inspection_report/",post_guest_inspection_report,name="post_guest_inspection_report"),
+    # path("post_guest_inspection_report/",post_guest_inspection_report,name="post_guest_inspection_report"),
     path("delete/",delete_images,name="delete_images"), #cloudinary delete view
     path("guest_inspection_report_post/",guest_inspection_report_post,name="guest_inspection_report_post"),
     path("post_guest_inspection_report_mob/",post_guest_inspection_report_mob,name="post_guest_inspection_report_mob"),
-    path("update_car_status/<int:guest_car_id>/",update_car_status,name="update_car_status")
+    path("update_car_status/<int:guest_car_id>/",update_car_status,name="update_car_status"),
+    path("get_inspection_report_guest/",get_inspection_report_guest,name="get_inspection_report_guest"),
+    path("get_upcoming_cars_by_guest/",get_upcoming_cars_by_guest,name="get_upcoming_cars_by_guest"),
+    path("get_bidding_cars_by_guest/",get_bidding_cars_by_guest,name="get_bidding_cars_by_guest")
     
 
 

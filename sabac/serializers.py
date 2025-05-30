@@ -19,7 +19,6 @@ from .models import (
 
 
 class UserSerializer(serializers.ModelSerializer):
-    image = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -36,25 +35,6 @@ class UserSerializer(serializers.ModelSerializer):
             "image",
         ]
         extra_kwargs = {"password": {"write_only": True}}
-
-    def validate_image(self, value):
-        """Ensure the image is a valid Base64 string."""
-        if value:
-            try:
-                # Decode Base64 string
-                decoded_data = base64.b64decode(value)
-
-                # Ensure it's a valid image by checking file signature (optional)
-                if not decoded_data.startswith(
-                    b"\xFF\xD8"
-                ) and not decoded_data.startswith(b"\x89PNG"):
-                    raise serializers.ValidationError(
-                        "Invalid image format. Only JPEG and PNG are supported."
-                    )
-
-            except Exception:
-                raise serializers.ValidationError("Invalid Base64-encoded image.")
-        return value
 
     def create(self, validated_data):
         # Hash the password and create the user
@@ -475,7 +455,6 @@ class GuestSerializer(serializers.ModelSerializer):
         return value
         
         
-
 
 
 class CarListingSerializer(serializers.ModelSerializer):
