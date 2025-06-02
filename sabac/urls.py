@@ -4,7 +4,7 @@ from .views import (
     register,
     is_authentecated,
     add_availability,
-    select_slot,
+    select_slot, #not used now
     get_selected_slots,
     post_inspection_report,
     get_inspection_report,
@@ -52,7 +52,7 @@ from .views import (
     get_reviewd_inspection,
 )
 from .views import (
-    get_assigned_slots,
+    # get_assigned_slots,
     mark_notifications_as_read,
     post_additional_details,
     get_user_cars,
@@ -94,7 +94,12 @@ from .views import (
     update_car_status,
     get_inspection_report_guest,
     get_upcoming_cars_by_guest,
-    get_bidding_cars_by_guest
+    get_bidding_cars_by_guest,
+    approve_guest_inspection,
+    reject_guest_inspection,
+    # get_assigned_slots,
+    get_manual_entries_for_inspector,
+    get_manual_saler_assigned_slots
 
 
 )
@@ -228,19 +233,14 @@ urlpatterns = [
     # path(
     #     "post_guest_details/", post_guest_details, name="post_guest_details"
     # ),  # guest add basic detail
-    path(
-        "guest_add_car_details/", guest_add_car_details, name="guest_add_car_details"
-    ),  # guest post car for sale
-    path(
-        "get_guest_car_details/", get_guest_car_details, name="get_guest_car_details"
-    ),  # list of cars of guests
+  # list of cars of guests
     path(
         "assign_inspector_to_car/",
         assign_inspector_to_car,
         name="assign_inspector_to_car",
     ),  # link car to specefic inspector for manual entry
     path(
-        "seller_manual_entries/", seller_manual_entries, name="seller_manual_entries"
+        "seller_manual_entries/<int:inspector_id>/", seller_manual_entries, name="seller_manual_entries"
     ),  # seller carss list manual entries for inspector///////////////////////////////////
     path("mark-inspected/<int:car_id>/",
          mark_as_inspected, name="mark_as_inspected"),
@@ -305,9 +305,18 @@ urlpatterns = [
     path("get_all_bidding/", get_all_bidding, name="get_all_bidding"),
     path("live-cars/", get_all_sold_cars, name="get_all_sold_cars"),
     path("bid_notification_for_seller/",bid_notification_for_seller,name="bid_notification_for_seller"),
+    
+    
+    
+    path(
+        "guest_add_car_details/", guest_add_car_details, name="guest_add_car_details"
+    ),  # guest post car for sale
+    path(
+        "get_guest_car_details/", get_guest_car_details, name="get_guest_car_details"
+    ),
     path("assign_inspector_to_guest_car/",assign_inspector_to_guest_car,name="assign_inspector_to_guest_car"),
     path("get_inspector_appointmnet_by_guest/",get_inspector_appointmnet_by_guest,name="get_inspector_appointmnet_by_guest"),
-    path("get_manual_guest_cars_for_inspector/",get_manual_guest_cars_for_inspector,name="get_manual_guest_cars_for_inspector"),
+    path("get_manual_guest_cars_for_inspector/",get_manual_guest_cars_for_inspector,name="get_manual_guest_cars_for_inspector"), #not used
     path("mark_guest_car_as_inspected/<int:id>/",mark_guest_car_as_inspected,name="mark_guest_car_as_inspected"),
     # path("post_guest_inspection_report/",post_guest_inspection_report,name="post_guest_inspection_report"),
     path("delete/",delete_images,name="delete_images"), #cloudinary delete view
@@ -316,7 +325,12 @@ urlpatterns = [
     path("update_car_status/<int:guest_car_id>/",update_car_status,name="update_car_status"),
     path("get_inspection_report_guest/",get_inspection_report_guest,name="get_inspection_report_guest"),
     path("get_upcoming_cars_by_guest/",get_upcoming_cars_by_guest,name="get_upcoming_cars_by_guest"),
-    path("get_bidding_cars_by_guest/",get_bidding_cars_by_guest,name="get_bidding_cars_by_guest")
+    path("get_bidding_cars_by_guest/",get_bidding_cars_by_guest,name="get_bidding_cars_by_guest"),
+    path("approve_guest_inspection/<int:report_id>/",approve_guest_inspection,name="approve_guest_inspection"),
+    path("reject_guest_inspection/<int:report_id>/",reject_guest_inspection,name="reject_guest_inspection"),
+    # path("get_assigned_slots/",get_assigned_slots,name="get_assigned_slots"),
+    path("get_manual_entries_for_inspector/",get_manual_entries_for_inspector,name="get_manual_entries_for_inspector"),
+    path("get_manual_saler_assigned_slots/",get_manual_saler_assigned_slots,name="get_manual_saler_assigned_slots")
     
 
 

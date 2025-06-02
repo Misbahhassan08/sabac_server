@@ -69,6 +69,8 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
         child=serializers.URLField(), allow_null=True, required=False
     )
     inspection_time = serializers.CharField(required=False, allow_null=True)
+    inspection_date = serializers.DateField(required=False, allow_null=True)  
+
 
     class Meta:
         model = saler_car_details
@@ -281,6 +283,7 @@ class BiddingSerializer(serializers.ModelSerializer):
             "created_at",
             "dealer",
             "saler_car",
+            "guest_car"
         ]
 
     # def get_owner_details(self, obj):
@@ -305,77 +308,9 @@ class NotificationSerializer(serializers.ModelSerializer):
             "category",
             "bid",
             "recipient",
+            "guest_car"
         ]
-
-
-class Base64ImageField(serializers.ImageField):
-    """Custom field to handle base64 image data"""
-
-    def to_internal_value(self, data):
-        """Convert base64 string to an image file"""
-        if isinstance(data, str) and data.startswith("data:image"):
-            # Decode the base64 string
-            format, imgstr = data.split(";base64,")
-            ext = format.split("/")[-1]
-
-            file_name = f"{uuid.uuid4()}.{ext}"
-
-            data = ContentFile(base64.b64decode(imgstr), name=file_name)
-
-        return super().to_internal_value(data)
-
-
-class AssignedSlotSerializer(serializers.ModelSerializer):
-    inspector = serializers.ReadOnlyField(source="inspector.username")
-    inspector_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role="inspector"), write_only=True
-    )
-    car_id = serializers.IntegerField(write_only=True)
-    car = SalerCarDetailsSerializer(read_only=True)
-
-    class Meta:
-        model = AssignSlot
-        fields = [
-            "id",
-            "inspector",
-            "inspector_id",
-            "car_id",
-            "car",
-            "date",
-            "time_slot",
-            "assigned_by",
-        ]
-        read_only_fields = ["inspector", "assigned_by", "car"]
-
-    def create(self, validated_data):
-        """Create AssignSlot WITHOUT adding to SelectedSlot"""
-        inspector = validated_data.pop("inspector_id")
-        car_id = validated_data.pop("car_id")  # ✅ Extract car_id
-
-        try:
-            car = saler_car_details.objects.get(
-                saler_car_id=car_id
-            )  # ✅ Fetch car object
-        except saler_car_details.DoesNotExist:
-            raise serializers.ValidationError({"car_id": "Invalid Car ID"})
-
-        # ✅ Only save in AssignSlot, DO NOT save in SelectedSlot
-        assigned_slot = AssignSlot.objects.create(
-            inspector=inspector, assigned_by="inspector", car=car, **validated_data
-        )
-
-        return assigned_slot
-
-
-class AdditionalDetailSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AdditionalDetails
-
-        fields = ["name", "number"]
-
-
-
-
+        
 class GuestSerializer(serializers.ModelSerializer):
     inspector_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role="inspector"),
@@ -454,7 +389,82 @@ class GuestSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Time must be in 12-hour format, e.g., '02:30 PM'.")
         return value
         
-        
+  
+
+
+class Base64ImageField(serializers.ImageField):
+    """Custom field to handle base64 image data"""
+
+    def to_internal_value(self, data):
+        """Convert base64 string to an image file"""
+        if isinstance(data, str) and data.startswith("data:image"):
+            # Decode the base64 string
+            format, imgstr = data.split(";base64,")
+            ext = format.split("/")[-1]
+
+            file_name = f"{uuid.uuid4()}.{ext}"
+
+            data = ContentFile(base64.b64decode(imgstr), name=file_name)
+
+        return super().to_internal_value(data)
+
+
+class AssignedSlotSerializer(serializers.ModelSerializer):
+    inspector = serializers.ReadOnlyField(source="inspector.username")
+    inspector_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="inspector"), write_only=True
+    )
+    car_id = serializers.IntegerField(write_only=True)
+    car = SalerCarDetailsSerializer(read_only=True)
+    guest = GuestSerializer(source="guest_car", read_only=True)
+
+
+    class Meta:
+        model = AssignSlot
+        fields = [
+            "id",
+            "inspector",
+            "inspector_id",
+            "car_id",
+            "car",
+            "guest_car",
+            "guest",
+            "inspection_date",
+            "inspection_time",
+            "assigned_by",
+        ]
+        read_only_fields = ["inspector", "assigned_by", "car","guest"]
+
+    def create(self, validated_data):
+        """Create AssignSlot WITHOUT adding to SelectedSlot"""
+        inspector = validated_data.pop("inspector_id")
+        car_id = validated_data.pop("car_id")  # ✅ Extract car_id
+
+        try:
+            car = saler_car_details.objects.get(
+                saler_car_id=car_id
+            )  # ✅ Fetch car object
+        except saler_car_details.DoesNotExist:
+            raise serializers.ValidationError({"car_id": "Invalid Car ID"})
+
+        # ✅ Only save in AssignSlot, DO NOT save in SelectedSlot
+        assigned_slot = AssignSlot.objects.create(
+            inspector=inspector, assigned_by="inspector", car=car, **validated_data
+        )
+
+        return assigned_slot
+
+
+class AdditionalDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdditionalDetails
+
+        fields = ["name", "number"]
+
+
+
+
+      
 
 
 class CarListingSerializer(serializers.ModelSerializer):

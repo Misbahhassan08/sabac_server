@@ -93,7 +93,7 @@ class saler_car_details(models.Model):
     photos = models.JSONField(null=True, blank=True)
     primary_phone_number = models.CharField(max_length=15, null=True, blank=True)
     secondary_phone_number = models.CharField(max_length=15, null=True, blank=True)
-    inspection_date = models.DateField()
+    inspection_date = models.DateField(null=True, blank=True)
     inspection_time = models.CharField(max_length=20 , null=True , blank=True) ##change 15/5/2025
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -384,8 +384,9 @@ class Bidding(models.Model):
         related_name="bids",
     )
     saler_car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE, related_name="bids"
+        saler_car_details, on_delete=models.CASCADE, related_name="bids",null=True,blank=True
     )
+    guest_car = models.ForeignKey(Guest , null=True , blank=True, on_delete=models.CASCADE, related_name="guest_car_bid")
     bid_amount = models.DecimalField(max_digits=65, decimal_places=2)
     bid_date = models.DateField(auto_now_add=True)
     is_accepted = models.BooleanField(default=False)
@@ -429,6 +430,13 @@ class Notification(models.Model):
         null=True,
         blank=True,
     )
+    guest_car = models.ForeignKey( 
+        Guest,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
     category = models.CharField(max_length=150, null=True, blank=True)
 
     def __str__(self):
@@ -459,13 +467,15 @@ class AssignSlot(models.Model):
         related_name="assigning_slots",
     )
     car = models.ForeignKey(
-        saler_car_details, on_delete=models.CASCADE, related_name="assigned_slots"
+        saler_car_details, on_delete=models.CASCADE, null=True,blank=True, related_name="assigned_slots"
     )
-    date = models.DateField()
-    time_slot = models.TimeField()
+    guest_car = models.ForeignKey(Guest , on_delete=models.CASCADE, null=True,blank=True, related_name="assigned_slot_to_guest")
+    inspection_date = models.DateField(null=True,blank=True)
+    inspection_time = models.CharField(max_length=20 , null=True , blank=True) ##change 15/5/2025
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     assigned_by = models.CharField(max_length=50, default="inspector")
+    
 
     def __str__(self):
         return f"Slot for {self.car.car_name} ({self.car.model}) on {self.date} at {self.time_slot}"
