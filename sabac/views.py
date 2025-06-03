@@ -1543,8 +1543,8 @@ def saler_register(request):
             email=data.get("email"),
             password=data.get("password"),
             phone_number=data.get("phone_number"),
-            adress=data.get("adress"),  # ✅ include this
-            image=data.get("image"),  # ✅ include this
+            adress=data.get("adress"),
+            image=data.get("image"),
             role="saler",
         )
 
@@ -1880,7 +1880,7 @@ def update_ad(request, car_id):
         return Response({"message": "car not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if car.user != user:
-        return Response({"message": "UnAuthorized"}, status=status.HTTP_403_FORBIDDEN)
+        return Response({"message": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = SalerCarDetailsSerializer(car, data, partial=True)
 
@@ -2022,29 +2022,6 @@ def get_last_car_details(request):
     serializer = SalerCarDetailsSerializer(last_car)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-# GETTING & POSTING THE PHOTOS OF SALER CAR not used POST WITH CAR DETAILS
-# @api_view(["POST", "GET"])
-# @permission_classes([IsAuthenticated])
-# def salerCarPhoto(request):
-#     if request.method == "POST":
-#         data = request.data
-#         serializer = CarPhotoSerializer(data=data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     elif request.method == "GET":
-#         car_id = request.query_params.get("car", None)
-
-#         if car_id:
-#             car_photos = CarPhoto.objects.filter(car=car_id)
-#         else:
-#             car_photos = CarPhoto.objects.all()
-#         serializer = CarPhotoSerializer(car_photos, many=True)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
 # ///////////////////////////////INSPECTOR APIs////////////////////////////////
 
 
@@ -2181,24 +2158,6 @@ def assign_slot(request):
         except Guest.DoesNotExist:
             return Response({"error": "Invalid guest car ID."}, status=400)
         
-        
-# MANUAL APPOINTMENT
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def get_assigned_slots(request):
-#     assigned_slots = (
-#         AssignSlot.objects.select_related("car", "car__user", "inspector")
-#         .filter(
-#             Q(car__user__isnull=False)
-#             | Q(car__is_manual=True)
-#             | Q(car__guest__isnull=False)
-#         )
-#         .exclude(car__isnull=True)
-#     )
-
-#     serializer = AssignedSlotSerializer(assigned_slots, many=True)
-#     return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 # INSPECTOR POST INSPECTION REPORT
 @api_view(["POST"])
@@ -2603,84 +2562,7 @@ def update_inspection_report(request, report_id):
     )
 
 
-# INSPECTORS ADD TIME AND DATE MAKE SCHEDULE
-
-
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def add_availability(request):
-#     user = request.user
-
-#     if user.role.lower() != "inspector":
-#         return Response(
-#             {"message": "Only an inspector can add availability"}, status=403
-#         )
-#     data = request.data
-#     date_slots = data.get("dateSlots")
-
-#     if not date_slots or not isinstance(date_slots, list):
-#         return Response(
-#             {"message": "A list of date and slot pairs is required"}, status=400
-#         )
-
-#     for entry in date_slots:
-#         date_str = entry.get("date")
-#         slots = entry.get("slots")
-
-#         # Debugging log
-#         print(f"Processing entry -> Date: {date_str}, Slots: {slots}")
-
-#         if not date_str or not slots:
-#             return Response(
-#                 {"message": "Each entry must have a valid date and slots"}, status=400
-#             )
-
-#         try:
-#             current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-#             # Debugging log
-#             print(f"Parsed date (before conversion): {current_date}")
-#         except ValueError:
-#             return Response(
-#                 {"message": "Invalid date format. Use YYYY-MM-DD"}, status=400
-#             )
-
-#         server_time = localtime(now()).date()
-
-#         if current_date < server_time:
-#             return Response({"message": "Cannot add slots for past dates"}, status=400)
-
-#         valid_slots = set()
-#         for slot in slots:
-#             try:
-#                 if "AM" in slot.upper() or "PM" in slot.upper():
-#                     slot_time = datetime.strptime(slot, "%I:%M %p").time()
-#                 else:
-#                     slot_time = datetime.strptime(slot, "%H:%M").time()
-
-#                 valid_slots.add(slot_time.strftime("%H:%M"))
-#             except ValueError:
-#                 return Response(
-#                     {
-#                         "message": f"Invalid time format: {slot}. Use HH:MM or 12-hour format (e.g., 2:30 PM)"
-#                     },
-#                     status=400,
-#                 )
-
-#         availability, created = Availability.objects.get_or_create(
-#             inspector=user, date=current_date
-#         )
-
-#         existing_slots = (
-#             set(availability.time_slots) if availability.time_slots else set()
-#         )
-#         updated_slots = list(existing_slots.union(valid_slots))
-
-#         availability.time_slots = updated_slots
-#         availability.save()
-
-#     return Response({"message": "Availability slots added successfully"}, status=201)
-
-
+# INSPECTOR MAKE SCHEDULE//////////////////
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_availability(request):
@@ -3032,11 +2914,12 @@ def get_guest_car_details(request):
                 {"error": "Invalid inspector ID"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        assigned_cars = saler_car_details.objects.filter(
-            inspector=inspector, status="pending", added_by="guest"
-        ).select_related("guest")
+        # Removed .select_related("guest") because 'guest' is not a foreign key
+        assigned_cars = Guest.objects.filter(
+            inspector=inspector, status="pending", is_manual=False
+        )
 
-        serializer = SalerCarDetailsSerializer(assigned_cars, many=True)
+        serializer = GuestSerializer(assigned_cars, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
@@ -3248,10 +3131,17 @@ def dealer_inventory(request):
             status=status.HTTP_403_FORBIDDEN,
         )
     cars = saler_car_details.objects.filter(winner_dealer=user)
+    guest = Guest.objects.filter(winner_dealer=user)
+    
 
-    serializer = SalerCarDetailsSerializer(cars, many=True)
+    seller_cars = SalerCarDetailsSerializer(cars, many=True)
+    guest_cars = GuestSerializer(guest,many=True)
+    
     return Response(
-        {"message": "success", "cars": serializer.data}, status=status.HTTP_200_OK
+        {"message": "success", 
+         "seller_cars": seller_cars.data,
+         "guest_cars" : guest_cars.data,
+         }, status=status.HTTP_200_OK
     )
 
 
