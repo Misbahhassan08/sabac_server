@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
-    get_free_slots,
     register,
+    get_free_slots,
     is_authentecated,
     add_availability,
     select_slot, #not used now
