@@ -1,11 +1,8 @@
 from datetime import timedelta
 from django.utils import timezone
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
-
-
 import copy
 
 
@@ -27,26 +24,24 @@ class User(AbstractUser):
         return self.username
 
 
+
 OPTION_CHOICES = [
     ("basic", "BASIC"),
     ("mid_option", "MID OPTION"),
     ("full_option", "FULL OPTION"),
     ("i_dont_know", "I DONT KNOW"),
 ]
-
 PAINT_CHOICES = [
     ("original_paint", "ORIGINAL PAINT"),
     ("partial_repaint", "PARTIAL REPAINT"),
     ("full_repaint", "FULL REPAINT"),
     ("i_dont_know", "I DONT KNOW"),
 ]
-
 SPECIFICATON_OPTIONS = [
     ("gcc_specs", "GCC SPECS"),
     ("non_specs", "NON SPECS"),
     ("i_dont_know", "I DONT KNOW"),
 ]
-
 
 class saler_car_details(models.Model):
     STATUS_CHOICES = [
@@ -78,9 +73,6 @@ class saler_car_details(models.Model):
         blank=True,
         related_name="dealer_inventory_cars",
     )
-    # guest = models.ForeignKey(
-    #     Guest, on_delete=models.SET_NULL, null=True, related_name="guest_owner_cars"
-    # )  # Check this
     is_sold = models.BooleanField(default=False)
     car_name = models.CharField(max_length=100)
     company = models.CharField(max_length=100)
@@ -163,8 +155,6 @@ class Guest(models.Model):
     name = models.CharField(max_length=100)
     number = models.CharField(max_length=30)
     email = models.CharField(max_length=100)
-    
-    # car_id = models.AutoField(primary_key=True)
     inspector = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -220,7 +210,6 @@ class Guest(models.Model):
         now_time = timezone.now()
 
         if self.pk:
-            # ✅ FIX: Use Guest instead of saler_car_details
             existing_guest = Guest.objects.get(pk=self.pk)
 
             if existing_guest.status != "bidding" and self.status == "bidding":
@@ -240,7 +229,6 @@ class Guest(models.Model):
             and not self.is_sold
         ):
             self.status = "expired"
-
         super().save(*args, **kwargs)
 
     
@@ -332,14 +320,6 @@ class InspectionReport(models.Model):
             self.is_rejected = False
             self.save()
 
-            # Notification.objects.create(
-            #     recipient=self.guest_car.user,
-            #     message=f"Your guest car {self.guest_car.car_name} has been approved for bidding",
-            #     guest_car=self.guest_car,
-            #     category="guest_inspection_approved",
-            # )
-
-
     def reject_inspection(self):
         if self.saler_car and self.saler_car.status == "await_approval":
             self.saler_car.status = "rejected"
@@ -363,13 +343,6 @@ class InspectionReport(models.Model):
             self.is_rejected = True
             self.is_accepted = False
             self.save()
-
-            # Notification.objects.create(
-            #     recipient=self.guest_car.user,
-            #     message=f"Your guest car {self.guest_car.car_name} has been rejected after inspection.",
-            #     guest_car=self.guest_car,
-            #     category="guest_inspection_rejected",
-            # )
 
     def __str__(self):
         return f"Inspection Report for {self.saler_car.car_name} by {self.inspector.username} on {self.created_at}"
@@ -406,9 +379,9 @@ class Bidding(models.Model):
         return f"Dealer :{self.dealer.username}"
 
 
+
+
 # notification model for saler car posting
-
-
 class Notification(models.Model):
     recipient = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifecation"
@@ -457,8 +430,6 @@ class InspectionReportNotification(models.Model):
 
 
 # (Inspector assign slot to seller --manual entry)
-
-
 class AssignSlot(models.Model):
     inspector = models.ForeignKey(
         User,
@@ -491,8 +462,6 @@ class AdditionalDetails(models.Model):
 
 
 # device id model
-
-
 class DeviceToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     device_id = models.CharField(max_length=300)

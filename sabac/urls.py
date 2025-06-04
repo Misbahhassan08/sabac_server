@@ -11,8 +11,9 @@ from .views import (
     saler_register,
     add_car_details,
     get_car_details,
+    # get_notifications, not used
+    # get_inspection_notifications,
     get_notifications,
-    get_inspection_notifications,
     get_cars_list,
     get_seller_appointment_notification,
     assign_slot,
@@ -99,7 +100,9 @@ from .views import (
     reject_guest_inspection,
     # get_assigned_slots,
     get_manual_entries_for_inspector,
-    get_manual_saler_assigned_slots
+    get_manual_saler_assigned_slots,
+    mark_multiple_notifications_as_read,
+    mark_notification_as_read
 
 
 )
@@ -142,13 +145,13 @@ urlpatterns = [
     path(
         "get_car_details/", get_car_details, name="get_car_details"
     ),  # get saler car details
+    # path(
+    #     "notifications/", get_notifications, name="get_notifications"
+    # ),  # get notification for inspector when seller or guest ad post
     path(
-        "notifications/", get_notifications, name="get_notifications"
-    ),  # get notification
-    path(
-        "inspection-notifications/",
-        get_inspection_notifications,
-        name="inspection_notifications",
+        "get_notifications/",
+        get_notifications,
+        name="get_notifications",
     ),  # saler gets inspection notification
 
     path(
@@ -330,7 +333,10 @@ urlpatterns = [
     path("reject_guest_inspection/<int:report_id>/",reject_guest_inspection,name="reject_guest_inspection"),
     # path("get_assigned_slots/",get_assigned_slots,name="get_assigned_slots"),
     path("get_manual_entries_for_inspector/",get_manual_entries_for_inspector,name="get_manual_entries_for_inspector"),
-    path("get_manual_saler_assigned_slots/",get_manual_saler_assigned_slots,name="get_manual_saler_assigned_slots")
+    path("get_manual_saler_assigned_slots/",get_manual_saler_assigned_slots,name="get_manual_saler_assigned_slots"),
+    path("mark_multiple_notifications_as_read/",mark_multiple_notifications_as_read,name="mark_multiple_notifications_as_read"),
+    path("mark_notification_as_read/<int:notification_id>/",mark_notification_as_read,name="mark_notification_as_read")
+    
     
 
 
