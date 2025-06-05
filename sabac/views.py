@@ -55,6 +55,7 @@ import logging
 from django.db.models import Max
 from rest_framework_simplejwt.tokens import RefreshToken
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -308,7 +309,7 @@ def get_cars_for_approval(request):
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ADMIN ACCEPT THE CAR INSPECTION REPORT OF SELLER & GUEST
+# ADMIN ACCEPT THE CAR INSPECTION REPORT OF SELLER
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def approve_inspection(request, report_id):
@@ -317,6 +318,25 @@ def approve_inspection(request, report_id):
     if report.saler_car and report.saler_car.status == "await_approval":
         report.saler_car.status = "bidding"
         report.saler_car.save()
+        
+        # notification for seller
+        Notification.objects.create(
+            recipient = report.saler_car.user,
+            message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been approved for bidding.",
+            category="car_approved",
+            saler_car=report.saler_car,
+        )
+        
+        # Notify All Dealers
+        dealers = User.objects.filter(role="dealer")
+        for dealer in dealers:
+            Notification.objects.create(
+                recipient=dealer,
+                message=f"A new car '{report.saler_car.car_name} ({report.saler_car.year})' is now available for bidding.",
+                category="dealer_new_bid_car",
+                saler_car=report.saler_car,
+            )
+                    
         return Response(
             {"message": "Seller car approved and moved to bidding"},
             status=status.HTTP_200_OK,
@@ -329,7 +349,7 @@ def approve_inspection(request, report_id):
     
     
 
-# ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER & GUEST
+# ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reject_inspection(request, report_id):
@@ -338,6 +358,14 @@ def reject_inspection(request, report_id):
         if report.saler_car and report.saler_car.status == "await_approval":
             report.saler_car.status = "rejected"
             report.saler_car.save()
+            # notification for seller
+            Notification.objects.create(
+                recipient = report.saler_car.user,
+                message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been rejected for bidding.",
+                category="car_rejected",
+                saler_car=report.saler_car,
+            )
+                        
             return Response(
                 {"message": "Seller car inspection rejected"},
                 status=status.HTTP_200_OK,
@@ -359,7 +387,7 @@ def get_cars_list(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# ADMIN REGISTER THE DEALER AND INSPECTOR
+# ADMIN REGISTER THE DEALER AND INSPECTOR ----NOT USED
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def register(request):
@@ -380,7 +408,7 @@ def register(request):
     return Response(serializer.errors)
 
 
-# ADMIN UPDATE THE SALER & INSPECTOR
+# ADMIN UPDATE THE SALER & INSPECTOR------NOT USED
 @api_view(["PUT", "PATCH"])
 @permission_classes([IsAuthenticated])
 def edit_user(request):
@@ -838,6 +866,8 @@ def carsStats(request):
 #         {"message": "Bid accepted and car marked as sold"},
 #         status=status.HTTP_200_OK,
 #     )
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def accept_bid(request, bid_id):
@@ -880,6 +910,12 @@ def accept_bid(request, bid_id):
         guest_car=bid.guest_car,
         bid=bid,
         category="bid_accepted",
+    )
+    Notification.objects.create(
+        recipient=car.user,
+        message=f"Your car {car.company} {car.car_name} {car.year} has been sold.",
+        category="car_sold",
+        saler_car=car
     )
 
     return Response(
@@ -1150,6 +1186,60 @@ def get_all_sold_cars(request):
 
 
 # seller post car detail
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def add_car_details(request):
+#     try:
+#         user = request.user
+#         data = request.data.copy()
+#         data["user"] = user.id
+#         data["added_by"] = "seller"
+
+#         serializer = SalerCarDetailsSerializer(data=data)
+#         if serializer.is_valid():
+#             car_details = serializer.save()
+
+#             saler_phone_number = getattr(user, "phone_number", "N/A")
+
+#             inspection_date = (
+#                 car_details.inspection_date.strftime("%Y-%m-%d")
+#                 if car_details.inspection_date
+#                 else "Not Scheduled"
+#             )
+#             inspection_time = car_details.inspection_time 
+
+#             inspectors = User.objects.filter(role="inspector")
+
+#             for inspector in inspectors:
+#                 message = (
+#                     f"New Car: {car_details.car_name} ({car_details.year}) "
+#                     f"Added by: {user.username} (Phone: {saler_phone_number})."
+#                 )
+
+#                 if inspection_date and inspection_time:
+#                     message += f" Inspection Scheduled on {inspection_date} at {inspection_time}."
+#                 else:
+#                     message += " Inspection schedule not set."
+
+#                 Notification.objects.create(
+#                     recipient=inspector,
+#                     message=message,
+#                     category="saler_car_details",
+#                 )
+
+
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     except Exception as e:
+#         return Response(
+#             {"success": False, "message": f"Error adding car details: {str(e)}"},
+#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#         )
+
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_car_details(request):
@@ -1165,24 +1255,25 @@ def add_car_details(request):
 
             saler_phone_number = getattr(user, "phone_number", "N/A")
 
-            # ✅ Prevent error if inspection date or time is missing
-            inspection_date = (
-                car_details.inspection_date.strftime("%Y-%m-%d")
-                if car_details.inspection_date
-                else "Not Scheduled"
-            )
-            inspection_time = car_details.inspection_time or "Not Scheduled"
+            inspection_date = car_details.inspection_date
+            inspection_time = car_details.inspection_time
 
             inspectors = User.objects.filter(role="inspector")
 
             for inspector in inspectors:
+                message = (
+                    f"New Car: {car_details.car_name} ({car_details.year}) "
+                    f"Added by: {user.username} (Phone: {saler_phone_number}). "
+                )
+
+                if inspection_date and inspection_time:
+                    message += f"Inspection Scheduled on {inspection_date} at {inspection_time}."
+                else:
+                    message += "No appointment scheduled."
+
                 Notification.objects.create(
                     recipient=inspector,
-                    message=(
-                        f"New Car: {car_details.car_name} ({car_details.year}) "
-                        f"Added by: {user.username} (Phone: {saler_phone_number}) "
-                        f"Inspection Scheduled: {inspection_date} at {inspection_time}"
-                    ),
+                    message=message,
                     category="saler_car_details",
                 )
 
@@ -1267,7 +1358,7 @@ def select_slot(request):
     
 # get manual entries for seller
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])  # or use @permission_classes([IsAuthenticated]) if needed
+@permission_classes([IsAuthenticated])
 def get_manual_saler_assigned_slots(request):
     # Filter only manually added cars that are assigned
     saler_slots = AssignSlot.objects.select_related("car", "inspector").filter(
@@ -2815,27 +2906,38 @@ def get_selected_slots(request):
     )
 
 
-# INSPECTION REPORT NOTIFICATION
+# all notification get according to role
 @api_view(["GET"])
-@permission_classes([AllowAny])
-def get_inspection_notifications(request):
+@permission_classes([IsAuthenticated])
+def get_notifications(request):
     user = request.user
 
     if user.role == "saler":
         notifications = Notification.objects.filter(
             recipient=user,
-            category="Your_car_inspected",
+            category__in=["Your_car_inspected", "car_approved","car_rejected","car_sold"],
             saler_car__user=user,
+            is_read=False
         )
     elif user.role == "dealer":
         notifications = Notification.objects.filter(
             recipient=user,
-            category="dealer_car_inspected",
+            category__in=["dealer_car_inspected", "dealer_new_bid_car","dealer_guest_car_approved"],
+            is_read=False
         )
+    
+    elif user.role == "inspector":
+        notifications = Notification.objects.filter(
+            recipient=user,
+            category__in=["saler_car_details", "inspection_assignment"],
+            is_read=False
+        )
+    
     elif user.role == "admin":
         notifications = Notification.objects.filter(
             recipient=user,
-            category="admin_car_inspected",
+            category__in=["admin_car_inspected", "admin_guest_car_inspected"],
+            is_read=False
         )
     else:
         return Response(
@@ -3235,7 +3337,7 @@ def guest_add_car_details(request):
         if guest_serializer.is_valid():
             guest = guest_serializer.save()
 
-            # If inspector and both time/date are provided
+            # Save selected slot if both values are present
             if inspector and guest.inspection_time and guest.inspection_date:
                 try:
                     parsed_time = datetime.strptime(
@@ -3257,21 +3359,24 @@ def guest_add_car_details(request):
                     booked_by="guest",
                 )
 
-            # Notify inspector (even if date/time isn't set)
+            # Notification formatting
             if inspector:
-                inspection_date = (
-                    guest.inspection_date.strftime("%Y-%m-%d")
-                    if guest.inspection_date
-                    else "Not Scheduled"
+                inspection_date = guest.inspection_date
+                inspection_time = guest.inspection_time
+
+                message = (
+                    f"You have been assigned to inspect the car '{guest.car_name}' "
+                    f"from guest '{guest.name}'. "
                 )
-                inspection_time = guest.inspection_time or "Not Scheduled"
+
+                if inspection_date and inspection_time:
+                    message += f"Appointment scheduled on {inspection_date} at {inspection_time}."
+                else:
+                    message += "No appointment scheduled."
 
                 Notification.objects.create(
                     recipient=inspector,
-                    message=(
-                        f"You have been assigned to inspect the car '{guest.car_name}' "
-                        f"from guest '{guest.name}' on {inspection_date} at {inspection_time}."
-                    ),
+                    message=message,
                     category="inspection_assignment",
                 )
 
@@ -3624,6 +3729,16 @@ def post_guest_inspection_report_mob(request):
         #         category="guest_car_inspected",
         #         guest_car=car,
         #     )
+        
+                # Notify admins
+        admins = User.objects.filter(role="admin")
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                message=f"Guest car '{car.car_name} ({car.year})' has been inspected. Check the inspection report.",
+                category="admin_guest_car_inspected",
+                guest_car=car,
+            )
 
         return Response(
             {
@@ -3745,6 +3860,19 @@ def approve_guest_inspection(request, report_id):
     if report.guest_car and report.guest_car.status == "await_approval":
         report.guest_car.status = "bidding"
         report.guest_car.save()
+        
+        
+                # Notify all dealers
+        dealers = User.objects.filter(role="dealer")
+        for dealer in dealers:
+            Notification.objects.create(
+                recipient=dealer,
+                message=f"Guest car '{report.guest_car.car_name}' has been approved for bidding.",
+                category="dealer_guest_car_approved",
+                guest_car=report.guest_car,
+            )
+            
+            
         return Response(
             {"message": "Guest car approved and moved to bidding"},
             status=status.HTTP_200_OK,
@@ -3780,23 +3908,25 @@ def reject_guest_inspection(request, report_id):
 
 
 # ////////////////////////////////////////////////////////other like status updating///////////////
-# saler posted car notifications get
+# get notification for inspector when seller or guest ad post
+# @api_view(["GET"])
+# @permission_classes([IsAuthenticated])
+# def get_notifications(request):
+#     user = request.user
+
+#     notifications = Notification.objects.filter(
+#         recipient=user,
+#         is_read=False,
+#         category__in=["saler_car_details", "inspection_assignment"]
+#     ).order_by("-created_at")
+
+#     serializer = NotificationSerializer(notifications, many=True)
+
+#     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_notifications(requet):
-    user = requet.user
 
-    notification = Notification.objects.filter(
-        recipient=user, category="saler_car_details"
-    )
-    serializer = NotificationSerializer(notification, many=True)
-
-    return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-# about saler car
+# Single notication read APi
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_notification_as_read(request, notification_id):
@@ -3806,9 +3936,31 @@ def mark_notification_as_read(request, notification_id):
         )
         notification.is_read = True
         notification.save()
-        return Response({"message": "Notification marked as read"}, status=200)
+
+        return Response(
+            {"success": True, "message": "Notification marked as read"},
+            status=status.HTTP_200_OK
+        )
     except Notification.DoesNotExist:
-        return Response({"message": "Notification not found"}, status=404)
+        return Response(
+            {"success": False, "message": "Notification not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+# multiple notification read
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def mark_multiple_notifications_as_read(request):
+    notification_ids = request.data.get("notification_ids", [])
+    updated = Notification.objects.filter(
+        id__in=notification_ids, recipient=request.user
+    ).update(is_read=True)
+
+    return Response(
+        {"success": True, "updated_count": updated},
+        status=status.HTTP_200_OK
+    )  
+
 
 
 # fetch assign slots
