@@ -61,35 +61,40 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 file_path = os.path.join(settings.BASE_DIR, 'cars.json')
-with open(file_path,'r') as f:
+with open(file_path, 'r') as f:
     car_data = json.load(f)
-    
+
 @csrf_exempt
 def get_cars_data(request):
     make = request.GET.get("make")
     year = request.GET.get("year")
     model = request.GET.get("model")
-    
-    if not make:
-        return JsonResponse(car_data)
-    
-    if make not in car_data:
-        return JsonResponse({"error" : "make not foud"},status=status.HTTP_404_NOT_FOUND)
-    
-    if not year:
-        return JsonResponse(car_data[make])
-    
-    if year not in car_data[make]:
-        return JsonResponse({"error" : "invalid Year"},status=status.HTTP_404_NOT_FOUND)
-    
-    if not model:
-        return JsonResponse(car_data[make][year])
 
-    if model not in car_data[make][year]:
+    if not make:
+        return JsonResponse({"makes": list(car_data.keys())})
+
+    if make not in car_data:
+        return JsonResponse({"error": "Make not found"}, status=404)
+
+    if not year:
+        return JsonResponse({"years": list(car_data[make].keys())})
+
+    if year not in car_data[make]:
+        return JsonResponse({"error": "Invalid year"}, status=404)
+
+    available_models = car_data[make][year].keys()
+
+    if not model:
+        return JsonResponse({"models": list(available_models)})
+
+    # Case-insensitive match for model name
+    model_matched = next((m for m in available_models if m.lower() == model.lower()), None)
+
+    if not model_matched:
         return JsonResponse({"error": "Model not found"}, status=404)
 
-    return JsonResponse({model: car_data[make][year][model]})
-    
+    return JsonResponse({model_matched: car_data[make][year][model_matched]})
+  
     
     
     
