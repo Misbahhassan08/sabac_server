@@ -2155,41 +2155,91 @@ def get_last_car_details(request):
 # ///////////////////////////////INSPECTOR APIs////////////////////////////////
 
 
+# @api_view(["GET"])
+# @permission_classes([IsAuthenticated])
+# def inspector_appointments(request):
+#     user = request.user
+#     if user.role != "inspector":
+#         return Response(
+#             {"message": "Only inspectors can view this data"},
+#             status=status.HTTP_403_FORBIDDEN,
+#         )
+
+#     appointments = saler_car_details.objects.filter(
+#         inspector=user, user__isnull=False, is_manual=False
+#     ).order_by("inspection_date", "inspection_time")
+
+#     if not appointments.exists():
+#         return Response(
+#             {"message": "No valid appointments found for this inspector"},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+#     serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
+
+#     for i, appointment in enumerate(appointments):
+#         serialized_appointments[i]["inspection_date"] = (
+#             appointment.inspection_date.strftime("%Y-%m-%d")
+#         )
+#         serialized_appointments[i]["inspection_time"] = appointment.inspection_time
+
+#     return Response(
+#         {
+#             "message": "Inspector appointments retrieved successfully",
+#             "appointments": serialized_appointments,
+#         },
+#         status=status.HTTP_200_OK,
+#     )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def inspector_appointments(request):
-    user = request.user
-    if user.role != "inspector":
+    try:
+        user = request.user
+
+        if user.role != "inspector":
+            return Response(
+                {"message": "Only inspectors can view this data"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        appointments = saler_car_details.objects.filter(
+            inspector=user, user__isnull=False, is_manual=False
+        ).order_by("inspection_date", "inspection_time")
+
+        if not appointments.exists():
+            return Response(
+                {"message": "No valid appointments found for this inspector"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
+
+        # Format date and time safely
+        for i, appointment in enumerate(appointments):
+            serialized_appointments[i]["inspection_date"] = (
+                appointment.inspection_date.strftime("%Y-%m-%d")
+                if appointment.inspection_date else None
+            )
+            serialized_appointments[i]["inspection_time"] = (
+                str(appointment.inspection_time)
+                if appointment.inspection_time else None
+            )
+
         return Response(
-            {"message": "Only inspectors can view this data"},
-            status=status.HTTP_403_FORBIDDEN,
+            {
+                "message": "Inspector appointments retrieved successfully",
+                "appointments": serialized_appointments,
+            },
+            status=status.HTTP_200_OK,
         )
 
-    appointments = saler_car_details.objects.filter(
-        inspector=user, user__isnull=False, is_manual=False
-    ).order_by("inspection_date", "inspection_time")
-
-    if not appointments.exists():
+    except Exception as e:
         return Response(
-            {"message": "No valid appointments found for this inspector"},
-            status=status.HTTP_404_NOT_FOUND,
+            {"error": "Something went wrong", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-    serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
-
-    for i, appointment in enumerate(appointments):
-        serialized_appointments[i]["inspection_date"] = (
-            appointment.inspection_date.strftime("%Y-%m-%d")
-        )
-        serialized_appointments[i]["inspection_time"] = appointment.inspection_time
-
-    return Response(
-        {
-            "message": "Inspector appointments retrieved successfully",
-            "appointments": serialized_appointments,
-        },
-        status=status.HTTP_200_OK,
-    )
 
 
 # INSPECTOR ASSIGN SLOTS
