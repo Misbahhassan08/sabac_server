@@ -4704,3 +4704,112 @@ def delete_images(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "POST method required"}, status=400)
+
+
+
+
+
+
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def post_inspection_report_combined(request):
+#     user = request.user
+
+#     if user.role != "inspector":
+#         return Response(
+#             {"message": "Only inspectors can submit inspection reports."},
+#             status=status.HTTP_403_FORBIDDEN,
+#         )
+
+#     data = request.data
+#     json_obj = data.get("json_obj")
+
+#     # Validate and parse inspection JSON
+#     mobile_data = {
+#         "basicInfo": json_obj.get("basicInfo", {}),
+#         "techSpecs": json_obj.get("techSpecs", {}),
+#         "bodyParts": json_obj.get("bodyParts", []),
+#     }
+#     merge_result = merge_json(my_default_json, mobile_data)
+#     serializer_data = {**data, "json_obj": merge_result}
+
+#     guest_car_id = data.get("guest_car")
+#     saler_car_id = data.get("saler_car")
+
+#     # One of the car types must be present
+#     if not guest_car_id and not saler_car_id:
+#         return Response(
+#             {"message": "Either 'guest_car' or 'saler_car' field is required."},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+#     try:
+#         if guest_car_id:
+#             car = Guest.objects.get(id=guest_car_id)
+#             serializer = InspectionReportSerializer(data=serializer_data)
+#             if serializer.is_valid():
+#                 report = serializer.save(inspector=user, guest_car=car)
+
+#                 # Notify admins
+#                 admins = User.objects.filter(role="admin")
+#                 for admin in admins:
+#                     Notification.objects.create(
+#                         recipient=admin,
+#                         message=f"Guest car '{car.car_name} ({car.year})' has been inspected.",
+#                         category="admin_guest_car_inspected",
+#                         guest_car=car,
+#                     )
+
+#                 return Response(
+#                     {
+#                         "message": "Guest car inspection report submitted successfully.",
+#                         "report": InspectionReportSerializer(report).data,
+#                     },
+#                     status=status.HTTP_201_CREATED,
+#                 )
+
+#         elif saler_car_id:
+#             car = saler_car_details.objects.get(saler_car_id=saler_car_id)
+#             serializer = InspectionReportSerializer(data=serializer_data)
+#             if serializer.is_valid():
+#                 report = serializer.save(inspector=user, saler_car=car)
+
+#                 Notification.objects.create(
+#                     recipient=car.user,
+#                     message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+#                     category="Your_car_inspected",
+#                     saler_car=car,
+#                 )
+#                 Notification.objects.create(
+#                     recipient=car.user,
+#                     message=f"Car '{car.car_name} ({car.year})' inspected by {user.username}.",
+#                     category="dealer_car_inspected",
+#                     saler_car=car,
+#                 )
+#                 Notification.objects.create(
+#                     recipient=car.user,
+#                     message=f"Car '{car.car_name} ({car.year})' inspected by {user.username}.",
+#                     category="admin_car_inspected",
+#                     saler_car=car,
+#                 )
+
+#                 return Response(
+#                     {
+#                         "message": "Saler car inspection report submitted successfully.",
+#                         "report": InspectionReportSerializer(report).data,
+#                     },
+#                     status=status.HTTP_201_CREATED,
+#                 )
+
+#     except Guest.DoesNotExist:
+#         return Response(
+#             {"message": "Guest car not found."},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+#     except saler_car_details.DoesNotExist:
+#         return Response(
+#             {"message": "Saler car not found."},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

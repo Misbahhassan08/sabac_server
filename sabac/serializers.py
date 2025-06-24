@@ -78,6 +78,7 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             "saler_car_id",
             "user",
             "car_name",
+            "car_variant",
             "company",
             "year",
             "engine_size",
@@ -148,6 +149,10 @@ class SelectedSlotSerializer(serializers.ModelSerializer):
 
 # INSPECTION REPORT SERIALIZER
 class InspectionReportSerializer(serializers.ModelSerializer):
+    image_urls = serializers.ListField(
+        child=serializers.URLField(), required=False, allow_null=True
+    )
+    
     class Meta:
         model = InspectionReport
         fields = "__all__"
@@ -223,6 +228,7 @@ class GuestSerializer(serializers.ModelSerializer):
             "inspector",
             "winner_dealer", 
             "car_name",
+            "car_variant",
             "company",
             "year",
             "engine_size",

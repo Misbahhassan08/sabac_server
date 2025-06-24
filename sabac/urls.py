@@ -103,7 +103,8 @@ from .views import (
     get_manual_saler_assigned_slots,
     mark_multiple_notifications_as_read,
     mark_notification_as_read,
-    get_cars_data
+    get_cars_data,
+    # post_inspection_report_combined
 
 
 )
@@ -337,7 +338,8 @@ urlpatterns = [
     path("get_manual_entries_for_inspector/",get_manual_entries_for_inspector,name="get_manual_entries_for_inspector"),
     path("get_manual_saler_assigned_slots/",get_manual_saler_assigned_slots,name="get_manual_saler_assigned_slots"),
     path("mark_multiple_notifications_as_read/",mark_multiple_notifications_as_read,name="mark_multiple_notifications_as_read"),
-    path("mark_notification_as_read/<int:notification_id>/",mark_notification_as_read,name="mark_notification_as_read")
+    path("mark_notification_as_read/<int:notification_id>/",mark_notification_as_read,name="mark_notification_as_read"),
+    # path("post_inspection_report_combined/",post_inspection_report_combined,name="post_inspection_report_combined")
     
     
 
