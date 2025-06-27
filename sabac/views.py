@@ -3882,6 +3882,9 @@ def guest_inspection_report_post(request):
 
     if serializer.is_valid():
         report = serializer.save(inspector=user, guest_car=car)
+        
+        car.is_inspected=True
+        car.save()
 
         return Response(
             {
@@ -3933,6 +3936,10 @@ def post_guest_inspection_report_mob(request):
     serializer = InspectionReportSerializer(data=serializer_data)
     if serializer.is_valid():
         report = serializer.save(inspector=user, guest_car=car)
+        
+        
+        car.is_inspected = True
+        car.save()
 
         # Optional Notification if guest user exists (enable only if needed)
         # if car.user:
