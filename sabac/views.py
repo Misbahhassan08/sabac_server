@@ -60,9 +60,10 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-file_path = os.path.join(settings.BASE_DIR, 'cars.json')
-with open(file_path, 'r') as f:
+file_path = os.path.join(settings.BASE_DIR, "cars.json")
+with open(file_path, "r") as f:
     car_data = json.load(f)
+
 
 @csrf_exempt
 def get_cars_data(request):
@@ -88,16 +89,16 @@ def get_cars_data(request):
         return JsonResponse({"models": list(available_models)})
 
     # Case-insensitive match for model name
-    model_matched = next((m for m in available_models if m.lower() == model.lower()), None)
+    model_matched = next(
+        (m for m in available_models if m.lower() == model.lower()), None
+    )
 
     if not model_matched:
         return JsonResponse({"error": "Model not found"}, status=404)
 
     return JsonResponse({model_matched: car_data[make][year][model_matched]})
-  
-    
-    
-    
+
+
 # login
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
@@ -357,15 +358,15 @@ def approve_inspection(request, report_id):
     if report.saler_car and report.saler_car.status == "await_approval":
         report.saler_car.status = "bidding"
         report.saler_car.save()
-        
+
         # notification for seller
         Notification.objects.create(
-            recipient = report.saler_car.user,
+            recipient=report.saler_car.user,
             message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been approved for bidding.",
             category="car_approved",
             saler_car=report.saler_car,
         )
-        
+
         # Notify All Dealers
         dealers = User.objects.filter(role="dealer")
         for dealer in dealers:
@@ -375,45 +376,48 @@ def approve_inspection(request, report_id):
                 category="dealer_new_bid_car",
                 saler_car=report.saler_car,
             )
-                    
+
         return Response(
             {"message": "Seller car approved and moved to bidding"},
             status=status.HTTP_200_OK,
         )
 
     return Response(
-        {"message": "Seller car is not in await_approval status or not linked properly"},
+        {
+            "message": "Seller car is not in await_approval status or not linked properly"
+        },
         status=status.HTTP_400_BAD_REQUEST,
     )
-    
-    
 
-# ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER 
+
+# ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reject_inspection(request, report_id):
-        report = get_object_or_404(InspectionReport, id=report_id)
+    report = get_object_or_404(InspectionReport, id=report_id)
 
-        if report.saler_car and report.saler_car.status == "await_approval":
-            report.saler_car.status = "rejected"
-            report.saler_car.save()
-            # notification for seller
-            Notification.objects.create(
-                recipient = report.saler_car.user,
-                message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been rejected for bidding.",
-                category="car_rejected",
-                saler_car=report.saler_car,
-            )
-                        
-            return Response(
-                {"message": "Seller car inspection rejected"},
-                status=status.HTTP_200_OK,
-            )
+    if report.saler_car and report.saler_car.status == "await_approval":
+        report.saler_car.status = "rejected"
+        report.saler_car.save()
+        # notification for seller
+        Notification.objects.create(
+            recipient=report.saler_car.user,
+            message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been rejected for bidding.",
+            category="car_rejected",
+            saler_car=report.saler_car,
+        )
 
         return Response(
-            {"message": "Seller car is not in await_approval status or not linked properly"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"message": "Seller car inspection rejected"},
+            status=status.HTTP_200_OK,
         )
+
+    return Response(
+        {
+            "message": "Seller car is not in await_approval status or not linked properly"
+        },
+        status=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 # get the list of all cars by sellers TOTAL CARS IN DATABSE NOT USED
@@ -938,9 +942,13 @@ def accept_bid(request, bid_id):
 
     # Reject other bids
     if bid.saler_car:
-        Bidding.objects.filter(saler_car=car).exclude(id=bid_id).update(status="rejected")
+        Bidding.objects.filter(saler_car=car).exclude(id=bid_id).update(
+            status="rejected"
+        )
     elif bid.guest_car:
-        Bidding.objects.filter(guest_car=car).exclude(id=bid_id).update(status="rejected")
+        Bidding.objects.filter(guest_car=car).exclude(id=bid_id).update(
+            status="rejected"
+        )
 
     Notification.objects.create(
         recipient=bid.dealer,
@@ -954,17 +962,13 @@ def accept_bid(request, bid_id):
         recipient=car.user,
         message=f"Your car {car.company} {car.car_name} {car.year} has been sold.",
         category="car_sold",
-        saler_car=car
+        saler_car=car,
     )
 
     return Response(
         {"message": "Bid accepted and car marked as sold"},
         status=status.HTTP_200_OK,
     )
-
-
-
-
 
 
 # REJECT BID
@@ -1003,6 +1007,7 @@ def accept_bid(request, bid_id):
 #         category="bid_rejected",
 #     )
 
+
 #     logger.info(f"Bid {bid_id} rejected successfully by admin {user.username}")
 #     return Response({"message": "Bid rejected"}, status=status.HTTP_200_OK)
 @api_view(["POST"])
@@ -1039,10 +1044,6 @@ def reject_bid(request, bid_id):
     )
 
     return Response({"message": "Bid rejected"}, status=status.HTTP_200_OK)
-
-
-
-
 
 
 # FETCH BID NOTIFICATION FOR admin not used
@@ -1245,7 +1246,7 @@ def get_all_sold_cars(request):
 #                 if car_details.inspection_date
 #                 else "Not Scheduled"
 #             )
-#             inspection_time = car_details.inspection_time 
+#             inspection_time = car_details.inspection_time
 
 #             inspectors = User.objects.filter(role="inspector")
 
@@ -1276,7 +1277,6 @@ def get_all_sold_cars(request):
 #             {"success": False, "message": f"Error adding car details: {str(e)}"},
 #             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
 #         )
-
 
 
 @api_view(["POST"])
@@ -1393,17 +1393,15 @@ def select_slot(request):
     return Response(
         {"message": "Time slot selected successfully"}, status=status.HTTP_201_CREATED
     )
-    
-    
+
+
 # get manual entries for seller
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_manual_saler_assigned_slots(request):
     # Filter only manually added cars that are assigned
     saler_slots = AssignSlot.objects.select_related("car", "inspector").filter(
-        car__isnull=False,
-        car__status="assigned",
-        car__is_manual=True
+        car__isnull=False, car__status="assigned", car__is_manual=True
     )
 
     serializer = AssignedSlotSerializer(saler_slots, many=True)
@@ -2152,6 +2150,7 @@ def get_last_car_details(request):
     serializer = SalerCarDetailsSerializer(last_car)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 # ///////////////////////////////INSPECTOR APIs////////////////////////////////
 
 
@@ -2214,17 +2213,21 @@ def inspector_appointments(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
+        serialized_appointments = SalerCarDetailsSerializer(
+            appointments, many=True
+        ).data
 
         # Format date and time safely
         for i, appointment in enumerate(appointments):
             serialized_appointments[i]["inspection_date"] = (
                 appointment.inspection_date.strftime("%Y-%m-%d")
-                if appointment.inspection_date else None
+                if appointment.inspection_date
+                else None
             )
             serialized_appointments[i]["inspection_time"] = (
                 str(appointment.inspection_time)
-                if appointment.inspection_time else None
+                if appointment.inspection_time
+                else None
             )
 
         return Response(
@@ -2255,26 +2258,41 @@ def assign_slot(request):
     inspection_time = data.get("inspection_time")
 
     if not (car_id or guest_car_id):
-        return Response({"error": "Either car_id or guest_car_id is required."}, status=400)
+        return Response(
+            {"error": "Either car_id or guest_car_id is required."}, status=400
+        )
 
     if not (inspection_date and inspection_time):
-        return Response({"error": "Both inspection_date and inspection_time are required."}, status=400)
+        return Response(
+            {"error": "Both inspection_date and inspection_time are required."},
+            status=400,
+        )
 
     try:
         datetime.strptime(inspection_time, "%I:%M %p")
     except ValueError:
-        return Response({"error": "Invalid time format. Use 12-hour format like '01:30 PM'."}, status=400)
+        return Response(
+            {"error": "Invalid time format. Use 12-hour format like '01:30 PM'."},
+            status=400,
+        )
 
     # Check availability and update slot
     try:
-        availability = Availability.objects.get(inspector=inspector, date=inspection_date)
-        formatted_slots = [slot if isinstance(slot, str) else slot.strftime("%I:%M %p") for slot in availability.time_slots]
+        availability = Availability.objects.get(
+            inspector=inspector, date=inspection_date
+        )
+        formatted_slots = [
+            slot if isinstance(slot, str) else slot.strftime("%I:%M %p")
+            for slot in availability.time_slots
+        ]
 
         if inspection_time in formatted_slots:
             availability.time_slots.remove(inspection_time)
             availability.save()
         else:
-            return Response({"error": "Slot not available in inspector's availability."}, status=400)
+            return Response(
+                {"error": "Slot not available in inspector's availability."}, status=400
+            )
 
     except Availability.DoesNotExist:
         return Response({"error": "Inspector availability not found."}, status=404)
@@ -2297,14 +2315,17 @@ def assign_slot(request):
                 assigned_by="inspector",
             )
 
-            return Response({
-                "message": "Slot assigned successfully",
-                "assigned_to": "saler",
-                "slot_date": inspection_date,
-                "slot_time": inspection_time,
-                "inspector": inspector.username,
-                "saler_car": SalerCarDetailsSerializer(car).data
-            }, status=201)
+            return Response(
+                {
+                    "message": "Slot assigned successfully",
+                    "assigned_to": "saler",
+                    "slot_date": inspection_date,
+                    "slot_time": inspection_time,
+                    "inspector": inspector.username,
+                    "saler_car": SalerCarDetailsSerializer(car).data,
+                },
+                status=201,
+            )
 
         except saler_car_details.DoesNotExist:
             return Response({"error": "Invalid saler car ID."}, status=400)
@@ -2326,18 +2347,21 @@ def assign_slot(request):
                 assigned_by="inspector",
             )
 
-            return Response({
-                "message": "Slot assigned successfully",
-                "assigned_to": "guest",
-                "slot_date": inspection_date,
-                "slot_time": inspection_time,
-                "inspector": inspector.username,
-                "guest_car": GuestSerializer(guest).data
-            }, status=201)
+            return Response(
+                {
+                    "message": "Slot assigned successfully",
+                    "assigned_to": "guest",
+                    "slot_date": inspection_date,
+                    "slot_time": inspection_time,
+                    "inspector": inspector.username,
+                    "guest_car": GuestSerializer(guest).data,
+                },
+                status=201,
+            )
 
         except Guest.DoesNotExist:
             return Response({"error": "Invalid guest car ID."}, status=400)
-        
+
 
 # INSPECTOR POST INSPECTION REPORT
 @api_view(["POST"])
@@ -2422,31 +2446,28 @@ def get_assigned_slots(request):
         return Response({"error": "Inspector not found."}, status=404)
 
     # Get assigned slots for saler cars
-    saler_slots = AssignSlot.objects.select_related("car", "inspector").filter(
-        inspector=inspector,
-        car__isnull=False,
-        car__status="assigned"
-    ).filter(
-        Q(car__user__isnull=False) | Q(car__is_manual=True)
+    saler_slots = (
+        AssignSlot.objects.select_related("car", "inspector")
+        .filter(inspector=inspector, car__isnull=False, car__status="assigned")
+        .filter(Q(car__user__isnull=False) | Q(car__is_manual=True))
     )
 
     # Get assigned slots for guest cars
     guest_slots = AssignSlot.objects.select_related("guest_car", "inspector").filter(
-        inspector=inspector,
-        guest_car__isnull=False,
-        guest_car__status="assigned"
+        inspector=inspector, guest_car__isnull=False, guest_car__status="assigned"
     )
 
     # Serialize both separately
     saler_serializer = AssignedSlotSerializer(saler_slots, many=True)
     guest_serializer = AssignedSlotSerializer(guest_slots, many=True)
 
-    return Response({
-        "saler_cars": saler_serializer.data,
-        "guest_cars": guest_serializer.data
-    }, status=200)
+    return Response(
+        {"saler_cars": saler_serializer.data, "guest_cars": guest_serializer.data},
+        status=200,
+    )
 
-#manual entries for inspector by guest and seller
+
+# manual entries for inspector by guest and seller
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_manual_entries_for_inspector(request):
@@ -2461,25 +2482,23 @@ def get_manual_entries_for_inspector(request):
         return Response({"error": "Inspector not found."}, status=404)
 
     manual_saler_cars = saler_car_details.objects.filter(
-        is_manual=True,
-        status="pending",
-        inspector=inspector
+        is_manual=True, status="pending", inspector=inspector
     )
 
     manual_guests = Guest.objects.filter(
-        is_manual=True,
-        status="pending",
-        inspector_id=inspector.id
+        is_manual=True, status="pending", inspector_id=inspector.id
     )
 
     saler_serializer = SalerCarDetailsSerializer(manual_saler_cars, many=True)
     guest_serializer = GuestSerializer(manual_guests, many=True)
 
-    return Response({
-        "manual_saler_entries": saler_serializer.data,
-        "manual_guest_entries": guest_serializer.data
-    }, status=200)
-
+    return Response(
+        {
+            "manual_saler_entries": saler_serializer.data,
+            "manual_guest_entries": guest_serializer.data,
+        },
+        status=200,
+    )
 
 
 # INSPECTOR POST INSPECTION REPORT mobile
@@ -2760,6 +2779,7 @@ def add_availability(request):
         return Response(
             {"message": "A list of date and slot pairs is required."}, status=400
         )
+
     try:
         for entry in date_slots:
             date_str = entry.get("date")
@@ -2781,7 +2801,12 @@ def add_availability(request):
                     status=400,
                 )
 
-            if current_date < localtime(now()).date():
+            # Get current local date and time (Pakistan time if TIME_ZONE is set correctly)
+            current_datetime = localtime(now())
+            today = current_datetime.date()
+            current_time = current_datetime.time()
+
+            if current_date < today:
                 return Response(
                     {"message": "Cannot add slots for past dates."}, status=400
                 )
@@ -2789,7 +2814,15 @@ def add_availability(request):
             valid_slots = set()
             for slot in slots:
                 try:
-                    parsed_time = datetime.strptime(slot.strip(), "%I:%M %p")
+                    parsed_time = datetime.strptime(slot.strip(), "%I:%M %p").time()
+
+                    # If date is today and time is in the past, reject
+                    if current_date == today and parsed_time <= current_time:
+                        return Response(
+                            {"message": f"Cannot add past time slot: {slot}."},
+                            status=400,
+                        )
+
                     formatted_slot = parsed_time.strftime("%I:%M %p")
                     valid_slots.add(formatted_slot)
                 except ValueError:
@@ -2799,6 +2832,8 @@ def add_availability(request):
                         },
                         status=400,
                     )
+
+            from .models import Availability  # ⚠️ Adjust import as needed
 
             availability, _ = Availability.objects.get_or_create(
                 inspector=user, date=current_date
@@ -2950,6 +2985,7 @@ def get_seller_appointment_notification(request):
 #             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
 #         )
 
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_free_slots(request):
@@ -2984,7 +3020,9 @@ def get_free_slots(request):
 
         if not availability_queryset.exists():
             return Response(
-                {"message": "No availability records found for the given inspector and date."},
+                {
+                    "message": "No availability records found for the given inspector and date."
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -3004,7 +3042,7 @@ def get_free_slots(request):
             time_str = slot.time_slot.strftime("%I:%M %p")
             taken_slots.add(time_str)
 
-            slot_data = {      
+            slot_data = {
                 "slot_id": slot.id,
                 "date": slot.date.strftime("%Y-%m-%d"),
                 # "inspector": slot.inspector.username,
@@ -3012,7 +3050,9 @@ def get_free_slots(request):
             }
             reserved_slots.append(slot_data)
 
-            if slot.date < current_date or (slot.date == current_date and slot.time_slot < current_time):
+            if slot.date < current_date or (
+                slot.date == current_date and slot.time_slot < current_time
+            ):
                 passed_slots.append(slot_data)
 
         for car in car_inspections:
@@ -3033,13 +3073,15 @@ def get_free_slots(request):
                     # "status": car.status,
                 }
                 reserved_slots.append(slot_data)
-                
-                if car.inspection_date < current_date or (car.inspection_date == current_date and time_obj < current_time):
+
+                if car.inspection_date < current_date or (
+                    car.inspection_date == current_date and time_obj < current_time
+                ):
                     passed_slots.append(slot_data)
 
         free_slots = []
         passed_free_slots = []
-        
+
         for availability in availability_queryset:
             for slot_str in availability.time_slots:
                 if slot_str not in taken_slots:
@@ -3047,7 +3089,7 @@ def get_free_slots(request):
                         slot_time = datetime.strptime(slot_str, "%I:%M %p").time()
                     except ValueError:
                         slot_time = datetime.strptime(slot_str, "%H:%M").time()
-                    
+
                     slot_data = {
                         "availability_id": availability.id,
                         "date": availability.date.strftime("%Y-%m-%d"),
@@ -3055,7 +3097,9 @@ def get_free_slots(request):
                         "time_slot": slot_str,
                     }
 
-                    if availability.date < current_date or (availability.date == current_date and slot_time < current_time):
+                    if availability.date < current_date or (
+                        availability.date == current_date and slot_time < current_time
+                    ):
                         passed_free_slots.append(slot_data)
                     else:
                         free_slots.append(slot_data)
@@ -3065,7 +3109,7 @@ def get_free_slots(request):
                 "message": "Fetched slots successfully",
                 "free_slots": free_slots,
                 "reserved_slots": reserved_slots,
-                "passed_slots": passed_slots + passed_free_slots 
+                "passed_slots": passed_slots + passed_free_slots,
             },
             status=status.HTTP_200_OK,
         )
@@ -3074,6 +3118,7 @@ def get_free_slots(request):
             {"message": f"An unexpected error occurred: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # GET ALL SLOTS -----NOT USED
 @api_view(["GET"])
@@ -3128,29 +3173,38 @@ def get_notifications(request):
     if user.role == "saler":
         notifications = Notification.objects.filter(
             recipient=user,
-            category__in=["Your_car_inspected", "car_approved","car_rejected","car_sold"],
+            category__in=[
+                "Your_car_inspected",
+                "car_approved",
+                "car_rejected",
+                "car_sold",
+            ],
             saler_car__user=user,
-            is_read=False
+            is_read=False,
         )
     elif user.role == "dealer":
         notifications = Notification.objects.filter(
             recipient=user,
-            category__in=["dealer_car_inspected", "dealer_new_bid_car","dealer_guest_car_approved"],
-            is_read=False
+            category__in=[
+                "dealer_car_inspected",
+                "dealer_new_bid_car",
+                "dealer_guest_car_approved",
+            ],
+            is_read=False,
         )
-    
+
     elif user.role == "inspector":
         notifications = Notification.objects.filter(
             recipient=user,
             category__in=["saler_car_details", "inspection_assignment"],
-            is_read=False
+            is_read=False,
         )
-    
+
     elif user.role == "admin":
         notifications = Notification.objects.filter(
             recipient=user,
             category__in=["admin_car_inspected", "admin_guest_car_inspected"],
-            is_read=False
+            is_read=False,
         )
     else:
         return Response(
@@ -3321,10 +3375,15 @@ def place_bid(request):
         try:
             saler_car = saler_car_details.objects.get(saler_car_id=saler_car_id)
         except saler_car_details.DoesNotExist:
-            return Response({"message": "Saler car not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Saler car not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if saler_car.is_sold:
-            return Response({"message": "This saler car is already sold"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "This saler car is already sold"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         bid = Bidding.objects.create(
             dealer=user, saler_car=saler_car, bid_amount=bid_amount
@@ -3335,10 +3394,15 @@ def place_bid(request):
         try:
             guest_car = Guest.objects.get(id=guest_car_id)
         except Guest.DoesNotExist:
-            return Response({"message": "Guest car not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"message": "Guest car not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if guest_car.is_sold:
-            return Response({"message": "This guest car is already sold"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": "This guest car is already sold"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         bid = Bidding.objects.create(
             dealer=user, guest_car=guest_car, bid_amount=bid_amount
@@ -3364,11 +3428,13 @@ def place_bid(request):
 
     serializer = BiddingSerializer(bid)
     return Response(
-        {"message": "Bid placed successfully", "bid_id": bid.id, "bid": serializer.data},
+        {
+            "message": "Bid placed successfully",
+            "bid_id": bid.id,
+            "bid": serializer.data,
+        },
         status=status.HTTP_201_CREATED,
     )
-
-
 
 
 # @api_view(["POST"])
@@ -3447,16 +3513,17 @@ def dealer_inventory(request):
         )
     cars = saler_car_details.objects.filter(winner_dealer=user)
     guest = Guest.objects.filter(winner_dealer=user)
-    
 
     seller_cars = SalerCarDetailsSerializer(cars, many=True)
-    guest_cars = GuestSerializer(guest,many=True)
-    
+    guest_cars = GuestSerializer(guest, many=True)
+
     return Response(
-        {"message": "success", 
-         "seller_cars": seller_cars.data,
-         "guest_cars" : guest_cars.data,
-         }, status=status.HTTP_200_OK
+        {
+            "message": "success",
+            "seller_cars": seller_cars.data,
+            "guest_cars": guest_cars.data,
+        },
+        status=status.HTTP_200_OK,
     )
 
 
@@ -3612,6 +3679,7 @@ def guest_add_car_details(request):
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 # assigning inspector to guest car for manual entry
 @api_view(["POST"])
@@ -3882,8 +3950,8 @@ def guest_inspection_report_post(request):
 
     if serializer.is_valid():
         report = serializer.save(inspector=user, guest_car=car)
-        
-        car.is_inspected=True
+
+        car.is_inspected = True
         car.save()
 
         return Response(
@@ -3936,8 +4004,7 @@ def post_guest_inspection_report_mob(request):
     serializer = InspectionReportSerializer(data=serializer_data)
     if serializer.is_valid():
         report = serializer.save(inspector=user, guest_car=car)
-        
-        
+
         car.is_inspected = True
         car.save()
 
@@ -3949,8 +4016,8 @@ def post_guest_inspection_report_mob(request):
         #         category="guest_car_inspected",
         #         guest_car=car,
         #     )
-        
-                # Notify admins
+
+        # Notify admins
         admins = User.objects.filter(role="admin")
         for admin in admins:
             Notification.objects.create(
@@ -4024,8 +4091,8 @@ def update_car_status(request, guest_car_id):
         )
     except Guest.DoesNotExist:
         return Response({"message": "not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    
+
+
 # upcoming cars from guest
 # get cars with status inspection for dealer and admin (upcoming)
 @api_view(["GET"])
@@ -4069,8 +4136,8 @@ def get_bidding_cars_by_guest(request):
         {"message": "Cars fetched successfully", "cars": serializer.data},
         status=status.HTTP_200_OK,
     )
-    
-    
+
+
 # admin Accept Guest car inspection
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -4080,9 +4147,8 @@ def approve_guest_inspection(request, report_id):
     if report.guest_car and report.guest_car.status == "await_approval":
         report.guest_car.status = "bidding"
         report.guest_car.save()
-        
-        
-                # Notify all dealers
+
+        # Notify all dealers
         dealers = User.objects.filter(role="dealer")
         for dealer in dealers:
             Notification.objects.create(
@@ -4091,8 +4157,7 @@ def approve_guest_inspection(request, report_id):
                 category="dealer_guest_car_approved",
                 guest_car=report.guest_car,
             )
-            
-            
+
         return Response(
             {"message": "Guest car approved and moved to bidding"},
             status=status.HTTP_200_OK,
@@ -4102,8 +4167,6 @@ def approve_guest_inspection(request, report_id):
         {"message": "Guest car is not in await_approval status or not linked properly"},
         status=status.HTTP_400_BAD_REQUEST,
     )
-
-
 
 
 # Admin reject Guest car inspection
@@ -4126,7 +4189,6 @@ def reject_guest_inspection(request, report_id):
     )
 
 
-
 # ////////////////////////////////////////////////////////other like status updating///////////////
 # get notification for inspector when seller or guest ad post
 # @api_view(["GET"])
@@ -4145,7 +4207,6 @@ def reject_guest_inspection(request, report_id):
 #     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
 # Single notication read APi
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -4159,13 +4220,14 @@ def mark_notification_as_read(request, notification_id):
 
         return Response(
             {"success": True, "message": "Notification marked as read"},
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
     except Notification.DoesNotExist:
         return Response(
             {"success": False, "message": "Notification not found"},
-            status=status.HTTP_404_NOT_FOUND
+            status=status.HTTP_404_NOT_FOUND,
         )
+
 
 # multiple notification read
 @api_view(["POST"])
@@ -4177,10 +4239,8 @@ def mark_multiple_notifications_as_read(request):
     ).update(is_read=True)
 
     return Response(
-        {"success": True, "updated_count": updated},
-        status=status.HTTP_200_OK
-    )  
-
+        {"success": True, "updated_count": updated}, status=status.HTTP_200_OK
+    )
 
 
 # fetch assign slots
@@ -4263,7 +4323,7 @@ def update_status(request, car_id):
 # get seller manual entries
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def seller_manual_entries(request , inspector_id):
+def seller_manual_entries(request, inspector_id):
     try:
         inspector = User.objects.get(id=inspector_id)
     except User.DoesNotExist:
@@ -4274,7 +4334,6 @@ def seller_manual_entries(request , inspector_id):
     serializer = SalerCarDetailsSerializer(manual_cars, many=True)
 
     return Response(serializer.data)
-
 
 
 # is_inspected true
@@ -4711,10 +4770,6 @@ def delete_images(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "POST method required"}, status=400)
-
-
-
-
 
 
 # @api_view(["POST"])
