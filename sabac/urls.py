@@ -50,6 +50,7 @@ from .views import (
     update_is_manual,
     update_is_booked,
     update_inspection_report,
+    update_inspection_report_mob,
     get_reviewd_inspection,
 )
 from .views import (
@@ -265,6 +266,8 @@ urlpatterns = [
     ),  # update the car is_booked
     path("saler_manual_entry/", saler_manual_entry,
          name="saler_manual_entry"),  # seller manual entries
+    path('update_inspection_report_mob/<int:report_id>/',
+         update_inspection_report_mob, name='update_inspection_report_mob'),
     path('update_inspection_report/<int:report_id>/',
          update_inspection_report, name='update_inspection_report'),
     path('get_reviewd_inspection/', get_reviewd_inspection,

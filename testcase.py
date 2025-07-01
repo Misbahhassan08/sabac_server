@@ -7,6 +7,7 @@ my_default_json = {
             "bodyColor": "",
             "carModel": "",
             "carName": "",
+            "carVariant":"",
             "company": ""
         },
         "techSpecs": {

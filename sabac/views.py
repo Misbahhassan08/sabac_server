@@ -2431,6 +2431,68 @@ def post_inspection_report(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# update inspection report web
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def update_inspection_report(request, report_id):
+    user = request.user
+    if user.role != "inspector":
+        return Response(
+            {"message": "Only inspectors can update inspection reports."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        report = InspectionReport.objects.get(id=report_id, inspector=user)
+    except InspectionReport.DoesNotExist:
+        return Response(
+            {"message": "Inspection report not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    serializer = InspectionReportSerializer(instance=report, data=request.data, partial=True)
+    if serializer.is_valid():
+        updated_report = serializer.save()
+
+        car = updated_report.saler_car  # get car from the report
+
+        # Notifications
+        Notification.objects.create(
+            recipient=car.user,
+            message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
+            category="inspection_updated",
+            saler_car=car,
+        )
+
+        dealers = User.objects.filter(role="dealer")
+        for dealer in dealers:
+            Notification.objects.create(
+                recipient=dealer,
+                message=f"The inspection report for car '{car.car_name} ({car.year})' has been updated.",
+                category="dealer_inspection_updated",
+                saler_car=car,
+            )
+
+        admins = User.objects.filter(role="admin")
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                message=f"Inspection report updated for '{car.car_name} ({car.year})'.",
+                category="admin_inspection_updated",
+                saler_car=car,
+            )
+
+        return Response(
+            {
+                "message": "Inspection report updated successfully.",
+                "report": InspectionReportSerializer(updated_report).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 # manual appointment for inspector by seller and guest
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -2636,129 +2698,225 @@ def post_inspection_report_mob(request):
 
 
 # UPDATE INSPECTION REPORT
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
+# @api_view(["PUT"])
+# def update_inspection_report(request, report_id):
+#     user = request.user
+#     if user.role != "inspector":
+#         return Response(
+#             {"message": "only inspector can update"}, status=status.HTTP_403_FORBIDDEN
+#         )
+
+#     try:
+#         report = InspectionReport.objects.get(id=report_id, inspector=user)
+#         print(f"Report found: {report}")
+#     except InspectionReport.DoesNotExist:
+#         # Debugging line
+#         print(f"Report with ID {report_id} not found for inspector {user}")
+#         return Response(
+#             {"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND
+#         )
+
+#     data = request.data
+
+#     car_photos = data.get("car_photos", [])
+#     decoded_photos = []
+#     for index, photo in enumerate(car_photos):
+#         try:
+#             format, imgstr = photo.split(";base64,")
+#             ext = format.split("/")[-1]
+#             decoded_photos.append(f"data:image/{ext};base64,{imgstr}")
+#         except Exception as e:
+#             return Response(
+#                 {"message": f"Error processing image: {str(e)}"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+#     report.car_name = data.get("car_name", report.car_name)
+#     report.company = data.get("company", report.company)
+#     report.color = data.get("color", report.color)
+#     report.condition = data.get("condition", report.condition)
+#     report.model = data.get("model", report.model)
+#     report.fuel_type = data.get("fuel_type", report.fuel_type)
+#     report.year = data.get("year", report.year)
+#     report.engine_capacity = data.get("engine_capacity", report.engine_capacity)
+#     report.mileage = data.get("mileage", report.mileage)
+#     report.engine_type = data.get("engine_type", report.engine_type)
+#     report.transmission_type = data.get("transmission_type", report.transmission_type)
+
+#     report.engine_condition = data.get("engine_condition", report.engine_condition)
+#     report.body_condition = data.get("body_condition", report.body_condition)
+#     report.clutch_condition = data.get("clutch_condition", report.clutch_condition)
+#     report.steering_condition = data.get(
+#         "steering_condition", report.steering_condition
+#     )
+#     report.suspension_condition = data.get(
+#         "suspension_condition", report.suspension_condition
+#     )
+#     report.brakes_condition = data.get("brakes_condition", report.brakes_condition)
+#     report.ac_condition = data.get("ac_condition", report.ac_condition)
+#     report.tyres_condition = data.get("tyres_condition", report.tyres_condition)
+#     report.electrical_condition = data.get(
+#         "electrical_condition", report.electrical_condition
+#     )
+
+#     report.estimated_value = data.get("estimated_value", report.estimated_value)
+#     report.saler_demand = data.get("saler_demand", report.saler_demand)
+
+#     report.additional_comments = data.get(
+#         "additional_comments", report.additional_comments
+#     )
+#     report.car_photos = decoded_photos if decoded_photos else report.car_photos
+
+#     condition_fields = [
+#         report.engine_condition,
+#         report.body_condition,
+#         report.clutch_condition,
+#         report.steering_condition,
+#         report.suspension_condition,
+#         report.brakes_condition,
+#         report.ac_condition,
+#         report.electrical_condition,
+#         report.tyres_condition,
+#     ]
+#     report.overall_score = sum(condition_fields) / len(condition_fields)
+
+#     report.save()
+
+#     # Send Notifications
+#     try:
+#         if report.saler_car.user:
+#             Notification.objects.create(
+#                 recipient=report.saler_car.user,
+#                 message=f"Your car '{report.saler_car.car_name}' inspection report has been updated.",
+#                 category="inspection_updated",
+#                 saler_car=report.saler_car,
+#             )
+
+#         dealers = User.objects.filter(role="dealer")
+#         for dealer in dealers:
+#             Notification.objects.create(
+#                 recipient=dealer,
+#                 message=f"Updated inspection report available for '{report.saler_car.car_name}'.",
+#                 category="dealer_inspection_updated",
+#                 saler_car=report.saler_car,
+#             )
+
+#         admins = User.objects.filter(role="admin")
+#         for admin in admins:
+#             Notification.objects.create(
+#                 recipient=admin,
+#                 message=f"Inspection report updated for '{report.saler_car.car_name}'.",
+#                 category="admin_inspection_updated",
+#                 saler_car=report.saler_car,
+#             )
+
+#     except Exception as e:
+#         logger.error(f"Error while creating notifications: {str(e)}")
+
+#     serialized_report = InspectionReportSerializer(report)
+#     return Response(
+#         {
+#             "message": "Inspection report updated successfully",
+#             "report": serialized_report.data,
+#         },
+#         status=status.HTTP_200_OK,
+#     )
+
+
+
 @api_view(["PUT"])
-def update_inspection_report(request, report_id):
+@permission_classes([IsAuthenticated])
+def update_inspection_report_mob(request, report_id):
     user = request.user
     if user.role != "inspector":
         return Response(
-            {"message": "only inspector can update"}, status=status.HTTP_403_FORBIDDEN
+            {"message": "Only inspectors can update reports."},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     try:
         report = InspectionReport.objects.get(id=report_id, inspector=user)
-        print(f"Report found: {report}")
     except InspectionReport.DoesNotExist:
-        # Debugging line
-        print(f"Report with ID {report_id} not found for inspector {user}")
         return Response(
-            {"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND
+            {"message": "Inspection report not found."},
+            status=status.HTTP_404_NOT_FOUND,
         )
 
     data = request.data
+    # saler_car_id = data.get("saler_car")
 
-    car_photos = data.get("car_photos", [])
-    decoded_photos = []
-    for index, photo in enumerate(car_photos):
+    # if not saler_car_id:
+    #     return Response(
+    #         {"message": "Missing 'saler_car' field in request."},
+    #         status=status.HTTP_400_BAD_REQUEST,
+    #     )
+
+    # try:
+    #     car = saler_car_details.objects.get(saler_car_id=saler_car_id)
+    # except saler_car_details.DoesNotExist:
+    #     return Response(
+    #         {"message": "Car not found."},
+    #         status=status.HTTP_404_NOT_FOUND,
+    #     )
+    
+    car = report.saler_car
+
+    json_obj = data.get("json_obj")
+    mobile_data = {
+        "basicInfo": json_obj.get("basicInfo", {}),
+        "techSpecs": json_obj.get("techSpecs", {}),
+        "bodyParts": json_obj.get("bodyParts", []),
+    }
+
+    # Merge mobile data with default
+    merge_result = merge_json(my_default_json, mobile_data)
+
+    # Prepare data for update
+    serializer_data = {**data, "json_obj": merge_result}
+
+    serializer = InspectionReportSerializer(
+        instance=report, data=serializer_data, partial=True
+    )
+
+    if serializer.is_valid():
+        updated_report = serializer.save()
+
+        # Send notifications
         try:
-            format, imgstr = photo.split(";base64,")
-            ext = format.split("/")[-1]
-            decoded_photos.append(f"data:image/{ext};base64,{imgstr}")
-        except Exception as e:
-            return Response(
-                {"message": f"Error processing image: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-    report.car_name = data.get("car_name", report.car_name)
-    report.company = data.get("company", report.company)
-    report.color = data.get("color", report.color)
-    report.condition = data.get("condition", report.condition)
-    report.model = data.get("model", report.model)
-    report.fuel_type = data.get("fuel_type", report.fuel_type)
-    report.year = data.get("year", report.year)
-    report.engine_capacity = data.get("engine_capacity", report.engine_capacity)
-    report.mileage = data.get("mileage", report.mileage)
-    report.engine_type = data.get("engine_type", report.engine_type)
-    report.transmission_type = data.get("transmission_type", report.transmission_type)
-
-    report.engine_condition = data.get("engine_condition", report.engine_condition)
-    report.body_condition = data.get("body_condition", report.body_condition)
-    report.clutch_condition = data.get("clutch_condition", report.clutch_condition)
-    report.steering_condition = data.get(
-        "steering_condition", report.steering_condition
-    )
-    report.suspension_condition = data.get(
-        "suspension_condition", report.suspension_condition
-    )
-    report.brakes_condition = data.get("brakes_condition", report.brakes_condition)
-    report.ac_condition = data.get("ac_condition", report.ac_condition)
-    report.tyres_condition = data.get("tyres_condition", report.tyres_condition)
-    report.electrical_condition = data.get(
-        "electrical_condition", report.electrical_condition
-    )
-
-    report.estimated_value = data.get("estimated_value", report.estimated_value)
-    report.saler_demand = data.get("saler_demand", report.saler_demand)
-
-    report.additional_comments = data.get(
-        "additional_comments", report.additional_comments
-    )
-    report.car_photos = decoded_photos if decoded_photos else report.car_photos
-
-    condition_fields = [
-        report.engine_condition,
-        report.body_condition,
-        report.clutch_condition,
-        report.steering_condition,
-        report.suspension_condition,
-        report.brakes_condition,
-        report.ac_condition,
-        report.electrical_condition,
-        report.tyres_condition,
-    ]
-    report.overall_score = sum(condition_fields) / len(condition_fields)
-
-    report.save()
-
-    # Send Notifications
-    try:
-        if report.saler_car.user:
             Notification.objects.create(
-                recipient=report.saler_car.user,
-                message=f"Your car '{report.saler_car.car_name}' inspection report has been updated.",
+                recipient=car.user,
+                message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
                 category="inspection_updated",
-                saler_car=report.saler_car,
+                saler_car=car,
             )
 
-        dealers = User.objects.filter(role="dealer")
-        for dealer in dealers:
-            Notification.objects.create(
-                recipient=dealer,
-                message=f"Updated inspection report available for '{report.saler_car.car_name}'.",
-                category="dealer_inspection_updated",
-                saler_car=report.saler_car,
-            )
+            for dealer in User.objects.filter(role="dealer"):
+                Notification.objects.create(
+                    recipient=dealer,
+                    message=f"Updated inspection report available for '{car.car_name}'.",
+                    category="dealer_inspection_updated",
+                    saler_car=car,
+                )
 
-        admins = User.objects.filter(role="admin")
-        for admin in admins:
-            Notification.objects.create(
-                recipient=admin,
-                message=f"Inspection report updated for '{report.saler_car.car_name}'.",
-                category="admin_inspection_updated",
-                saler_car=report.saler_car,
-            )
+            for admin in User.objects.filter(role="admin"):
+                Notification.objects.create(
+                    recipient=admin,
+                    message=f"Inspection report updated for '{car.car_name}'.",
+                    category="admin_inspection_updated",
+                    saler_car=car,
+                )
+        except Exception as e:
+            logger.error(f"Notification error: {str(e)}")
 
-    except Exception as e:
-        logger.error(f"Error while creating notifications: {str(e)}")
+        return Response(
+            {
+                "message": "Inspection report updated successfully.",
+                "report": InspectionReportSerializer(updated_report).data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
-    serialized_report = InspectionReportSerializer(report)
-    return Response(
-        {
-            "message": "Inspection report updated successfully",
-            "report": serialized_report.data,
-        },
-        status=status.HTTP_200_OK,
-    )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # INSPECTOR MAKE SCHEDULE//////////////////
