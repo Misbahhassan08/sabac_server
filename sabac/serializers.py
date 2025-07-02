@@ -30,20 +30,35 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "password",
+            "plain_password",
             "role",
             "phone_number",
             "adress",
             "image",
         ]
-        extra_kwargs = {"password": {"write_only": True}}
+        extra_kwargs = {
+            "plain_password": {"read_only": True},
+        }
 
     def create(self, validated_data):
         # password hashing
         password = validated_data.pop("password")
         user = User(**validated_data)
         user.set_password(password)
+        user.plain_password=password
         user.save()
         return user
+    
+    def update(self, instance, validated_data):
+        password = validated_data.get("password", None)
+        if password:
+            instance.set_password(password)
+            instance.plain_password = password  # store plain password
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
 
 
 # Device token serializer

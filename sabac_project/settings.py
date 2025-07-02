@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app"]
 CSRF_TRUSTED_ORIGINS = ["https://*"]
 
 
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -58,6 +59,10 @@ CLOUDINARY_STORAGE = {
 }
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'zainahsan660@gmail.com'
 
 cloudinary.config(
     cloud_name="dhut1eqjs",

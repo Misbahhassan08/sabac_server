@@ -57,12 +57,70 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import os
 from django.conf import settings
 
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+
+
 
 logger = logging.getLogger(__name__)
 
 file_path = os.path.join(settings.BASE_DIR, "cars.json")
 with open(file_path, "r") as f:
     car_data = json.load(f)
+    
+    
+# //////////////////RESET PASSWORD////////////////////
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def request_reset_password(request):
+    email = request.data.get("email")
+    if not email:
+        return Response({"message" : "email is required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = User.objects.get(email=email)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        
+        reset_link = f"http://yourfrontend.com/reset-password/{uid}/{token}/"
+        
+        send_mail(
+            subject="Reset Your Password",
+            message=f"Click the link to reset password:{reset_link}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        
+        return Response({"message" : "Password reset mail sent"},status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({"message" :"user not found"},status=status.HTTP_404_NOT_FOUND)
+    
+# password reset confirm
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def confirm_reset_password(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+        
+        if not default_token_generator.check_token(user, token):
+            return Response({"error" : "invalid or expire token"},status=status.HTTP_400_BAD_REQUEST)
+        
+        new_password = request.data.get("new_password")
+        
+        if not new_password:
+            return Response({"message" :"new password is required"},status=status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+        return Response({"message" :"password changed successfully"},status=status.HTTP_201_CREATED)
+    except User.DoesNotExist:
+        return Response({"message" : "user not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    
 
 
 @csrf_exempt
@@ -1700,7 +1758,6 @@ def saler_register(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def dealer_register(request):
-
     if request.user.role != "admin":
         return Response(
             {"message": "Only admin can register a dealer."},
@@ -1721,6 +1778,10 @@ def dealer_register(request):
             role="dealer",
         )
 
+        # Store plain password
+        user.plain_password = data.get("password")
+        user.save()
+
         return Response(
             {
                 "message": "Dealer created successfully",
@@ -1731,13 +1792,13 @@ def dealer_register(request):
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "role": user.role,
+                "plain_password": user.plain_password,  # optional in response
             },
             status=status.HTTP_201_CREATED,
         )
 
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
 
 # update dealer
 @api_view(["PUT"])
@@ -1764,8 +1825,11 @@ def dealer_update(request, dealer_id):
     user.email = data.get("email", user.email)
     user.phone_number = data.get("phone_number", user.phone_number)
     user.adress = data.get("adress", user.adress)
-    if data.get("password"):
-        user.set_password(data["password"])
+
+    # 🔁 Update using plain_password if sent
+    if data.get("plain_password"):
+        user.set_password(data["plain_password"])
+        user.plain_password = data["plain_password"]
 
     user.save()
 
@@ -1779,16 +1843,61 @@ def dealer_update(request, dealer_id):
             "email": user.email,
             "phone_number": user.phone_number,
             "role": user.role,
+            "plain_password": user.plain_password,  # optional in response
         },
         status=status.HTTP_200_OK,
     )
 
-
 # inspector register
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def inspector_register(request):
+
+#     if request.user.role != "admin":
+#         return Response(
+#             {"message": "Only admin can register a dealer."},
+#             status=status.HTTP_403_FORBIDDEN,
+#         )
+
+#     data = request.data
+
+#     try:
+#         user = User.objects.create_user(
+#             username=data.get("username"),
+#             first_name=data.get("first_name"),
+#             last_name=data.get("last_name"),
+#             email=data.get("email"),
+#             password=data.get("password"),
+#             phone_number=data.get("phone_number"),
+#             adress=data.get("adress"),
+#             role="inspector",
+#         )
+#                 # Manually set plain_password and save again
+#         user.plain_password = password
+#         user.save()
+
+
+#         return Response(
+#             {
+#                 "message": "inspector created successfully",
+#                 "id": user.id,
+#                 "first_name": user.first_name,
+#                 "last_name": user.last_name,
+#                 "username": user.username,
+#                 "email": user.email,
+#                 "phone_number": user.phone_number,
+#                 "role": user.role,
+#                 "plain_password": user.plain_password,
+#             },
+#             status=status.HTTP_201_CREATED,
+#         )
+
+#     except Exception as e:
+#         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def inspector_register(request):
-
     if request.user.role != "admin":
         return Response(
             {"message": "Only admin can register a dealer."},
@@ -1796,18 +1905,21 @@ def inspector_register(request):
         )
 
     data = request.data
-
     try:
+        password = data.get("password")
         user = User.objects.create_user(
             username=data.get("username"),
             first_name=data.get("first_name"),
             last_name=data.get("last_name"),
             email=data.get("email"),
-            password=data.get("password"),
+            password=password,
             phone_number=data.get("phone_number"),
             adress=data.get("adress"),
             role="inspector",
         )
+        # Manually set plain_password and save again
+        user.plain_password = password
+        user.save()
 
         return Response(
             {
@@ -1819,10 +1931,10 @@ def inspector_register(request):
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "role": user.role,
+                "plain_password": user.plain_password,  # include plain password in response
             },
             status=status.HTTP_201_CREATED,
         )
-
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1841,7 +1953,7 @@ def inspector_update(request, inspector_id):
         user = User.objects.get(id=inspector_id, role="inspector")
     except User.DoesNotExist:
         return Response(
-            {"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND
+            {"message": "Inspector not found."}, status=status.HTTP_404_NOT_FOUND
         )
 
     data = request.data
@@ -1852,14 +1964,17 @@ def inspector_update(request, inspector_id):
     user.email = data.get("email", user.email)
     user.phone_number = data.get("phone_number", user.phone_number)
     user.adress = data.get("adress", user.adress)
-    if data.get("password"):
-        user.set_password(data["password"])
+
+    # 🔁 If 'plain_password' is sent, update both hashed and plain
+    if data.get("plain_password"):
+        user.set_password(data["plain_password"])
+        user.plain_password = data["plain_password"]
 
     user.save()
 
     return Response(
         {
-            "message": "inspector updated successfully",
+            "message": "Inspector updated successfully",
             "id": user.id,
             "first_name": user.first_name,
             "last_name": user.last_name,
@@ -1868,10 +1983,10 @@ def inspector_update(request, inspector_id):
             "phone_number": user.phone_number,
             "adress": user.adress,
             "role": user.role,
+            "plain_password": user.plain_password,
         },
         status=status.HTTP_200_OK,
     )
-
 
 # admin register
 @api_view(["POST"])
@@ -2843,6 +2958,7 @@ def update_inspection_report_mob(request, report_id):
         )
 
     data = request.data
+    print("update data:",data)
     # saler_car_id = data.get("saler_car")
 
     # if not saler_car_id:

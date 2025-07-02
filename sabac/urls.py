@@ -105,7 +105,9 @@ from .views import (
     mark_multiple_notifications_as_read,
     mark_notification_as_read,
     get_cars_data,
-    # post_inspection_report_combined
+    # post_inspection_report_combined,
+    request_reset_password,
+    confirm_reset_password
 
 
 )
@@ -342,7 +344,9 @@ urlpatterns = [
     path("get_manual_saler_assigned_slots/",get_manual_saler_assigned_slots,name="get_manual_saler_assigned_slots"),
     path("mark_multiple_notifications_as_read/",mark_multiple_notifications_as_read,name="mark_multiple_notifications_as_read"),
     path("mark_notification_as_read/<int:notification_id>/",mark_notification_as_read,name="mark_notification_as_read"),
-    # path("post_inspection_report_combined/",post_inspection_report_combined,name="post_inspection_report_combined")
+    # path("post_inspection_report_combined/",post_inspection_report_combined,name="post_inspection_report_combined"),
+    path("request_reset_password/",request_reset_password,name="request_reset_password"),
+    path("confirm_reset_password/",confirm_reset_password,name="confirm_reset_password")
     
     
 
