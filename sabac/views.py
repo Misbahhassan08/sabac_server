@@ -2004,6 +2004,9 @@ def admin_register(request):
             adress=data.get("adress"),
             role="admin",
         )
+                # Store plain password
+        user.plain_password = data.get("password")
+        user.save()
 
         return Response(
             {
@@ -2016,6 +2019,7 @@ def admin_register(request):
                 "phone_number": user.phone_number,
                 "adress": user.adress,
                 "role": user.role,
+                "plain_password":user.plain_password,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -2050,6 +2054,11 @@ def admin_update(request, admin_id):
     user.adress = data.get("adress", user.adress)
     if data.get("password"):
         user.set_password(data["password"])
+        
+        # 🔁 Update using plain_password if sent
+    if data.get("plain_password"):
+        user.set_password(data["plain_password"])
+        user.plain_password = data["plain_password"]
 
     user.save()
 
@@ -2060,6 +2069,8 @@ def admin_update(request, admin_id):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "username": user.username,
+            "password":user.password,
+            "plain_password":user.plain_password,
             "email": user.email,
             "phone_number": user.phone_number,
             "role": user.role,
@@ -2624,15 +2635,19 @@ def get_assigned_slots(request):
 
     # Get assigned slots for saler cars
     saler_slots = (
-        AssignSlot.objects.select_related("car", "inspector")
-        .filter(inspector=inspector, car__isnull=False, car__status="assigned")
-        .filter(Q(car__user__isnull=False) | Q(car__is_manual=True))
-    )
+    AssignSlot.objects.select_related("car", "inspector")
+    .filter(inspector=inspector, car__isnull=False)
+    .exclude(car__status="pending")  # Exclude cars with status 'pending'
+    .filter(Q(car__user__isnull=False) | Q(car__is_manual=True))
+)
 
     # Get assigned slots for guest cars
-    guest_slots = AssignSlot.objects.select_related("guest_car", "inspector").filter(
-        inspector=inspector, guest_car__isnull=False, guest_car__status="assigned"
-    )
+    guest_slots = (
+    AssignSlot.objects.select_related("guest_car", "inspector")
+    .filter(inspector=inspector, guest_car__isnull=False)
+    .exclude(guest_car__status="pending")  # Exclude guest cars with status 'pending'
+)
+
 
     # Serialize both separately
     saler_serializer = AssignedSlotSerializer(saler_slots, many=True)
