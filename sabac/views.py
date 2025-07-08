@@ -63,29 +63,30 @@ from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 
 
-
 logger = logging.getLogger(__name__)
 
 file_path = os.path.join(settings.BASE_DIR, "cars.json")
 with open(file_path, "r") as f:
     car_data = json.load(f)
-    
-    
+
+
 # //////////////////RESET PASSWORD////////////////////
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def request_reset_password(request):
     email = request.data.get("email")
     if not email:
-        return Response({"message" : "email is required"},status=status.HTTP_400_BAD_REQUEST)
-    
+        return Response(
+            {"message": "email is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
     try:
         user = User.objects.get(email=email)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        
+
         reset_link = f"http://yourfrontend.com/reset-password/{uid}/{token}/"
-        
+
         send_mail(
             subject="Reset Your Password",
             message=f"Click the link to reset password:{reset_link}",
@@ -93,11 +94,14 @@ def request_reset_password(request):
             recipient_list=[email],
             fail_silently=False,
         )
-        
-        return Response({"message" : "Password reset mail sent"},status=status.HTTP_200_OK)
+
+        return Response(
+            {"message": "Password reset mail sent"}, status=status.HTTP_200_OK
+        )
     except User.DoesNotExist:
-        return Response({"message" :"user not found"},status=status.HTTP_404_NOT_FOUND)
-    
+        return Response({"message": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
 # password reset confirm
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -105,22 +109,27 @@ def confirm_reset_password(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
-        
+
         if not default_token_generator.check_token(user, token):
-            return Response({"error" : "invalid or expire token"},status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"error": "invalid or expire token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         new_password = request.data.get("new_password")
-        
+
         if not new_password:
-            return Response({"message" :"new password is required"},status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {"message": "new password is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         user.set_password(new_password)
         user.save()
-        return Response({"message" :"password changed successfully"},status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "password changed successfully"}, status=status.HTTP_201_CREATED
+        )
     except User.DoesNotExist:
-        return Response({"message" : "user not found"},status=status.HTTP_404_NOT_FOUND)
-    
-    
+        return Response({"message": "user not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 @csrf_exempt
@@ -1800,6 +1809,7 @@ def dealer_register(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
 # update dealer
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
@@ -1848,6 +1858,7 @@ def dealer_update(request, dealer_id):
         status=status.HTTP_200_OK,
     )
 
+
 # inspector register
 # @api_view(["POST"])
 # @permission_classes([IsAuthenticated])
@@ -1894,6 +1905,7 @@ def dealer_update(request, dealer_id):
 
 #     except Exception as e:
 #         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -1988,6 +2000,7 @@ def inspector_update(request, inspector_id):
         status=status.HTTP_200_OK,
     )
 
+
 # admin register
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -2004,7 +2017,7 @@ def admin_register(request):
             adress=data.get("adress"),
             role="admin",
         )
-                # Store plain password
+        # Store plain password
         user.plain_password = data.get("password")
         user.save()
 
@@ -2019,7 +2032,7 @@ def admin_register(request):
                 "phone_number": user.phone_number,
                 "adress": user.adress,
                 "role": user.role,
-                "plain_password":user.plain_password,
+                "plain_password": user.plain_password,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -2054,7 +2067,7 @@ def admin_update(request, admin_id):
     user.adress = data.get("adress", user.adress)
     if data.get("password"):
         user.set_password(data["password"])
-        
+
         # 🔁 Update using plain_password if sent
     if data.get("plain_password"):
         user.set_password(data["plain_password"])
@@ -2069,8 +2082,8 @@ def admin_update(request, admin_id):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "username": user.username,
-            "password":user.password,
-            "plain_password":user.plain_password,
+            "password": user.password,
+            "plain_password": user.plain_password,
             "email": user.email,
             "phone_number": user.phone_number,
             "role": user.role,
@@ -2576,7 +2589,9 @@ def update_inspection_report(request, report_id):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    serializer = InspectionReportSerializer(instance=report, data=request.data, partial=True)
+    serializer = InspectionReportSerializer(
+        instance=report, data=request.data, partial=True
+    )
     if serializer.is_valid():
         updated_report = serializer.save()
 
@@ -2635,19 +2650,20 @@ def get_assigned_slots(request):
 
     # Get assigned slots for saler cars
     saler_slots = (
-    AssignSlot.objects.select_related("car", "inspector")
-    .filter(inspector=inspector, car__isnull=False)
-    .exclude(car__status="pending")  # Exclude cars with status 'pending'
-    .filter(Q(car__user__isnull=False) | Q(car__is_manual=True))
-)
+        AssignSlot.objects.select_related("car", "inspector")
+        .filter(inspector=inspector, car__isnull=False)
+        .exclude(car__status="pending")  # Exclude cars with status 'pending'
+        .filter(Q(car__user__isnull=False) | Q(car__is_manual=True))
+    )
 
     # Get assigned slots for guest cars
     guest_slots = (
-    AssignSlot.objects.select_related("guest_car", "inspector")
-    .filter(inspector=inspector, guest_car__isnull=False)
-    .exclude(guest_car__status="pending")  # Exclude guest cars with status 'pending'
-)
-
+        AssignSlot.objects.select_related("guest_car", "inspector")
+        .filter(inspector=inspector, guest_car__isnull=False)
+        .exclude(
+            guest_car__status="pending"
+        )  # Exclude guest cars with status 'pending'
+    )
 
     # Serialize both separately
     saler_serializer = AssignedSlotSerializer(saler_slots, many=True)
@@ -2953,7 +2969,6 @@ def post_inspection_report_mob(request):
 #     )
 
 
-
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_inspection_report_mob(request, report_id):
@@ -2973,7 +2988,7 @@ def update_inspection_report_mob(request, report_id):
         )
 
     data = request.data
-    print("update data:",data)
+    print("update data:", data)
     # saler_car_id = data.get("saler_car")
 
     # if not saler_car_id:
@@ -2989,7 +3004,7 @@ def update_inspection_report_mob(request, report_id):
     #         {"message": "Car not found."},
     #         status=status.HTTP_404_NOT_FOUND,
     #     )
-    
+
     car = report.saler_car
 
     json_obj = data.get("json_obj")
@@ -3624,13 +3639,24 @@ def get_upcoming_cars(request):
     cars = saler_car_details.objects.filter(
         Q(status="pending") | Q(status="in_inspection") | Q(status="await_approval")
     )
-    if not cars.exists():
+    
+       # Fetch guest cars
+    guest_cars = Guest.objects.filter(
+        Q(status="pending") | Q(status="in_inspection") | Q(status="await_approval")
+    )
+    
+    if not cars.exists() and not guest_cars.exists():
         return Response(
             {"Message": "No Upcoming cars Found!"}, status=status.HTTP_404_NOT_FOUND
         )
-    serializer = SalerCarDetailsSerializer(cars, many=True)
+    cars_serializer = SalerCarDetailsSerializer(cars, many=True)
+    guest_cars_serializer = GuestSerializer(guest_cars, many=True)
+    
 
-    return Response({"cars": serializer.data}, status=status.HTTP_200_OK)
+    return Response({
+        "cars": cars_serializer.data,
+        "guest_cars":guest_cars_serializer.data},
+        status=status.HTTP_200_OK)
 
 
 # DEALERS CAN PLACE BID
@@ -4607,6 +4633,37 @@ def update_status(request, car_id):
 
     except saler_car_details.DoesNotExist:
         return Response({"Error": "Not Found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_guest_status(request, guest_id):
+    try:
+        guest_car = Guest.objects.get(id=guest_id)
+        new_status = request.data.get("status")
+
+        valid_status = dict(Guest.STATUS_CHOICES).keys()
+        if new_status not in valid_status:
+            return Response(
+                {"error": "Invalid status provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        guest_car.status = new_status
+        guest_car.save()
+
+        return Response(
+            {
+                "message": "Guest car status updated successfully.",
+                "new_status": guest_car.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except Guest.DoesNotExist:
+        return Response(
+            {"error": "Guest car not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 # get seller manual entries
