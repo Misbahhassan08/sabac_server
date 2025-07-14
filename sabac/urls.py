@@ -108,7 +108,8 @@ from .views import (
     # post_inspection_report_combined,
     request_reset_password,
     confirm_reset_password,
-    update_guest_status
+    update_guest_status,
+    # combined_appointments
 
 
 )
@@ -348,7 +349,8 @@ urlpatterns = [
     # path("post_inspection_report_combined/",post_inspection_report_combined,name="post_inspection_report_combined"),
     path("request_reset_password/",request_reset_password,name="request_reset_password"),
     path("confirm_reset_password/",confirm_reset_password,name="confirm_reset_password"),
-    path("update_guest_status/<int:guest_id>/",update_guest_status,name="update_guest_status")
+    path("update_guest_status/<int:guest_id>/",update_guest_status,name="update_guest_status"),
+    # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
 

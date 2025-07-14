@@ -1,3 +1,5 @@
+from collections import defaultdict
+from operator import itemgetter
 from django.db.models.functions import TruncWeek, TruncDay, TruncMonth
 from django.db.models import Count
 from django.contrib.auth import get_user_model
@@ -2330,6 +2332,73 @@ def get_last_car_details(request):
 #     )
 
 
+# combined api for all type of appointment for inspector
+# @api_view(["GET"])
+# @permission_classes([IsAuthenticated])
+# def combined_appointments(request):
+#     user = request.user
+
+#     if user.role != "inspector":
+#         return Response({"error": "Only inspectors can access this"}, status=403)
+
+#     all_serialized = []
+
+#     # 1. Seller manual appointments (AssignSlot with car)
+#     seller_manual = AssignSlot.objects.select_related("car", "inspector") \
+#         .filter(inspector=user, car__isnull=False) \
+#         .exclude(car__status="pending") \
+#         .filter(car__user__isnull=False)
+#     for slot in seller_manual:
+#         serialized = AssignedSlotSerializer(slot).data
+#         serialized["source"] = "seller_manual"
+#         serialized["created_at"] = slot.created_at.isoformat()
+#         all_serialized.append(serialized)
+
+#     # 2. Guest manual appointments (AssignSlot with guest_car)
+#     guest_manual = AssignSlot.objects.select_related("guest_car", "inspector") \
+#         .filter(inspector=user, guest_car__isnull=False) \
+#         .exclude(guest_car__status="pending")
+#     for slot in guest_manual:
+#         serialized = AssignedSlotSerializer(slot).data
+#         serialized["source"] = "guest_manual"
+#         serialized["created_at"] = slot.created_at.isoformat()
+#         all_serialized.append(serialized)
+
+#     # 3. Guest scheduled appointments (Guest model)
+#     guest_scheduled = Guest.objects.filter(inspector=user, is_manual=False)
+#     for guest in guest_scheduled:
+#         serialized = GuestSerializer(guest).data
+#         serialized["source"] = "guest_scheduled"
+#         serialized["created_at"] = guest.created_at.isoformat()
+#         all_serialized.append(serialized)
+
+#     # 4. Seller scheduled appointments (saler_car_details model)
+#     seller_scheduled = saler_car_details.objects.select_related("user", "inspector") \
+#         .filter(inspector=user, user__isnull=False, is_manual=False)
+#     for car in seller_scheduled:
+#         serialized = SalerCarDetailsSerializer(car).data
+#         serialized["source"] = "seller_scheduled"
+#         serialized["created_at"] = car.created_at.isoformat()
+#         all_serialized.append(serialized)
+
+#     # 5. Sort all by created_at
+#     all_serialized.sort(key=itemgetter("created_at"))
+
+#     # 6. Group by created_at.date()
+#     grouped_by_date = defaultdict(list)
+#     for item in all_serialized:
+#         date_key = item["created_at"][:10]  # 'YYYY-MM-DD'
+#         grouped_by_date[date_key].append(item)
+
+#     return Response({
+#         "appointments_by_date": dict(grouped_by_date)
+#     }, status=200)
+    
+    
+    
+    
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def inspector_appointments(request):
@@ -2571,6 +2640,69 @@ def post_inspection_report(request):
 
 
 # update inspection report web
+# @api_view(["PUT"])
+# @permission_classes([IsAuthenticated])
+# def update_inspection_report(request, report_id):
+#     user = request.user
+#     if user.role != "inspector":
+#         return Response(
+#             {"message": "Only inspectors can update inspection reports."},
+#             status=status.HTTP_403_FORBIDDEN,
+#         )
+
+#     try:
+#         report = InspectionReport.objects.get(id=report_id, inspector=user)
+#     except InspectionReport.DoesNotExist:
+#         return Response(
+#             {"message": "Inspection report not found."},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+#     serializer = InspectionReportSerializer(
+#         instance=report, data=request.data, partial=True
+#     )
+#     if serializer.is_valid():
+#         updated_report = serializer.save()
+
+#         car = report.saler_car  # get car from the report
+
+#         # Notifications
+#         Notification.objects.create(
+#             recipient=car.user,
+#             message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
+#             category="inspection_updated",
+#             saler_car=car,
+#         )
+
+#         dealers = User.objects.filter(role="dealer")
+#         for dealer in dealers:
+#             Notification.objects.create(
+#                 recipient=dealer,
+#                 message=f"The inspection report for car '{car.car_name} ({car.year})' has been updated.",
+#                 category="dealer_inspection_updated",
+#                 saler_car=car,
+#             )
+
+#         admins = User.objects.filter(role="admin")
+#         for admin in admins:
+#             Notification.objects.create(
+#                 recipient=admin,
+#                 message=f"Inspection report updated for '{car.car_name} ({car.year})'.",
+#                 category="admin_inspection_updated",
+#                 saler_car=car,
+#             )
+
+#         return Response(
+#             {
+#                 "message": "Inspection report updated successfully.",
+#                 "report": InspectionReportSerializer(updated_report).data,
+#             },
+#             status=status.HTTP_200_OK,
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_inspection_report(request, report_id):
@@ -2589,39 +2721,43 @@ def update_inspection_report(request, report_id):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+    car = report.saler_car  # Get associated car
+
     serializer = InspectionReportSerializer(
         instance=report, data=request.data, partial=True
     )
+
     if serializer.is_valid():
         updated_report = serializer.save()
 
-        car = updated_report.saler_car  # get car from the report
+        # Send notifications safely
+        try:
+            if car and car.user:
+                Notification.objects.create(
+                    recipient=car.user,
+                    message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
+                    category="inspection_updated",
+                    saler_car=car,
+                )
 
-        # Notifications
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
-            category="inspection_updated",
-            saler_car=car,
-        )
+            for dealer in User.objects.filter(role="dealer"):
+                Notification.objects.create(
+                    recipient=dealer,
+                    message=f"The inspection report for car '{car.car_name} ({car.year})' has been updated.",
+                    category="dealer_inspection_updated",
+                    saler_car=car,
+                )
 
-        dealers = User.objects.filter(role="dealer")
-        for dealer in dealers:
-            Notification.objects.create(
-                recipient=dealer,
-                message=f"The inspection report for car '{car.car_name} ({car.year})' has been updated.",
-                category="dealer_inspection_updated",
-                saler_car=car,
-            )
+            for admin in User.objects.filter(role="admin"):
+                Notification.objects.create(
+                    recipient=admin,
+                    message=f"Inspection report updated for '{car.car_name} ({car.year})'.",
+                    category="admin_inspection_updated",
+                    saler_car=car,
+                )
 
-        admins = User.objects.filter(role="admin")
-        for admin in admins:
-            Notification.objects.create(
-                recipient=admin,
-                message=f"Inspection report updated for '{car.car_name} ({car.year})'.",
-                category="admin_inspection_updated",
-                saler_car=car,
-            )
+        except Exception as e:
+            logger.error(f"Notification error: {str(e)}")
 
         return Response(
             {
