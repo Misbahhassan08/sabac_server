@@ -1,69 +1,62 @@
-from collections import defaultdict
-from operator import itemgetter
-from django.db.models.functions import TruncWeek, TruncDay, TruncMonth
-from django.db.models import Count
-from django.contrib.auth import get_user_model
-from testcase import my_default_json, merge_json
-from time import timezone
-from django.utils.timezone import localtime, now
-from venv import logger
-from django.db.models import Q
-from rest_framework.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
-from rest_framework.decorators import (
-    api_view,
-    permission_classes,
-)
 import json
-from django.http import JsonResponse
+import logging
+import os
+from collections import defaultdict
+from datetime import datetime, timedelta
+from operator import itemgetter
+from time import timezone
+from venv import logger
+
 import cloudinary.api
+import cloudinary.uploader
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import send_mail
+from django.db.models import Count, Max, Q
+from django.db.models.functions import TruncDay, TruncMonth, TruncWeek
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.timezone import localtime, now
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-from .serializers import (
-    UserSerializer,
-    SalerCarDetailsSerializer,
-    AvailabilitySerializer,
-    SelectedSlotSerializer,
-    InspectionReportSerializer,
-    BiddingSerializer,
-    NotificationSerializer,
-    AssignedSlotSerializer,
-    AdditionalDetailSerializer,
-    GuestSerializer,
-)
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from testcase import merge_json, my_default_json
+
 from .models import (
+    AssignSlot,
+    Availability,
+    Bidding,
+    DeviceToken,
+    Guest,
+    InspectionReport,
+    Notification,
+    SelectedSlot,
     User,
     saler_car_details,
-    Availability,
-    SelectedSlot,
-    InspectionReport,
-    Bidding,
-    Notification,
-    AssignSlot,
-    Guest,
-    DeviceToken,
 )
-from rest_framework import status
-from datetime import datetime, timedelta
-from django.utils.timezone import now
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
-import logging
-from django.db.models import Max
-from rest_framework_simplejwt.tokens import RefreshToken
-import os
-from django.conf import settings
-
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.core.mail import send_mail
-
+from .serializers import (
+    AdditionalDetailSerializer,
+    AssignedSlotSerializer,
+    AvailabilitySerializer,
+    BiddingSerializer,
+    GuestSerializer,
+    InspectionReportSerializer,
+    NotificationSerializer,
+    SalerCarDetailsSerializer,
+    SelectedSlotSerializer,
+    UserSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -5233,6 +5226,7 @@ def delete_images(request):
         try:
             data = json.loads(request.body)
             public_ids = data.get("public_ids")
+            print("data",data)
 
             if not public_ids or not isinstance(public_ids, list):
                 return JsonResponse(
@@ -5240,7 +5234,7 @@ def delete_images(request):
                 )
 
             # Delete images from Cloudinary
-            result = cloudinary.api.delete_resources(public_ids)
+            result = cloudinary.api.delete_resources(public_ids,invalidate=True)
 
             return JsonResponse(
                 {"message": "Images deleted from Cloudinary", "result": result}
@@ -5252,6 +5246,31 @@ def delete_images(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "POST method required"}, status=400)
+
+
+# cludinary update
+@csrf_exempt
+def update_image(request):
+    if request.method == "POST":
+        try:
+            public_id = request.POST.get("public_id")
+            image_file = request.FILES.get("image")
+            
+            if not public_id or not image_file:
+                return JsonResponse({"message":"public id and new image are required"},status=status.HTTP_400_BAD_REQUEST)
+            
+            result = cloudinary.uploader.upload(
+                image_file,
+                public_id=public_id,
+                overwrite=True,
+                invalidate=True,
+            )
+            
+            return JsonResponse({"message" : "updated successfully", "result":result},status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return JsonResponse({"error" : str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return JsonResponse({"error" : "invalid request method"},status=status.HTTP_400_BAD_REQUEST)
 
 
 # @api_view(["POST"])
