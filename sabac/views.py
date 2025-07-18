@@ -2938,6 +2938,7 @@ def post_inspection_report_mob(request):
         "basicInfo": json_obj.get("basicInfo", {}),
         "techSpecs": json_obj.get("techSpecs", {}),
         "bodyParts": json_obj.get("bodyParts", []),
+        "comments":json_obj.get("comments","")
     }
     merge_result = merge_json(my_default_json, mobile_data)
     serializer_data = {**data, "json_obj": merge_result}
@@ -3266,8 +3267,6 @@ def add_availability(request):
                         },
                         status=400,
                     )
-
-            from .models import Availability  # ⚠️ Adjust import as needed
 
             availability, _ = Availability.objects.get_or_create(
                 inspector=user, date=current_date
@@ -4440,6 +4439,8 @@ def post_guest_inspection_report_mob(request):
         "basicInfo": json_obj.get("basicInfo", {}),
         "techSpecs": json_obj.get("techSpecs", {}),
         "bodyParts": json_obj.get("bodyParts", []),
+        "comments":json_obj.get("comments","")
+
     }
 
     merge_result = merge_json(my_default_json, mobile_data)
