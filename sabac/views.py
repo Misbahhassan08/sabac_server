@@ -3141,6 +3141,7 @@ def update_inspection_report_mob(request, report_id):
         "basicInfo": json_obj.get("basicInfo", {}),
         "techSpecs": json_obj.get("techSpecs", {}),
         "bodyParts": json_obj.get("bodyParts", []),
+        "comments": json_obj.get("comments","")
     }
 
     # Merge mobile data with default

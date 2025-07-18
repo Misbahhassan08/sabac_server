@@ -1,5 +1,5 @@
-import json
 import copy
+import json
 
 my_default_json = {
     "Car Detail": {
@@ -304,6 +304,9 @@ def merge_json(default_json, new_json):
             merged_json["Car Detail"]["techSpecs"][key] = value
         else:
             print(f"Warning: Key '{key}' not found in 'techSpecs'")
+        
+    if "comments" in new_json:
+        merged_json["Car Detail"]["comments"] = new_json["comments"]
 
     return merged_json
 
