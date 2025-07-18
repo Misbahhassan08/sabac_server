@@ -3663,7 +3663,7 @@ def get_guest_car_details(request):
 
         # Removed .select_related("guest") because 'guest' is not a foreign key
         assigned_cars = Guest.objects.filter(
-            inspector=inspector, status="pending", is_manual=False
+            inspector=inspector, is_manual=False
         )
 
         serializer = GuestSerializer(assigned_cars, many=True)
