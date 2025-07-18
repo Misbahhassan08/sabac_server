@@ -3197,6 +3197,9 @@ def update_inspection_report_mob(request, report_id):
 
 
 # INSPECTOR MAKE SCHEDULE//////////////////
+
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_availability(request):
@@ -3236,7 +3239,6 @@ def add_availability(request):
                     status=400,
                 )
 
-            # Get current local date and time (Pakistan time if TIME_ZONE is set correctly)
             current_datetime = localtime(now())
             today = current_datetime.date()
             current_time = current_datetime.time()
@@ -3246,20 +3248,41 @@ def add_availability(request):
                     {"message": "Cannot add slots for past dates."}, status=400
                 )
 
-            valid_slots = set()
+            try:
+                availability = Availability.objects.get(inspector=user, date=current_date)
+                free_slots = set(availability.time_slots or [])
+            except Availability.DoesNotExist:
+                free_slots = set()
+
+            reserved_slots_qs = SelectedSlot.objects.filter(inspector=user, date=current_date)
+            reserved_slots = set(slot.time_slot.strftime("%I:%M %p") for slot in reserved_slots_qs)
+
+            car_inspections = saler_car_details.objects.filter(inspector=user, inspection_date=current_date)
+            car_inspection_slots = set()
+            for car in car_inspections:
+                if car.inspection_time:
+                    try:
+                        t = datetime.strptime(car.inspection_time, "%I:%M %p").time()
+                    except ValueError:
+                        t = datetime.strptime(car.inspection_time, "%H:%M").time()
+                    car_inspection_slots.add(t.strftime("%I:%M %p"))
+
+            passed_slots = set()
+            for slot_str in reserved_slots.union(free_slots):
+                try:
+                    slot_time = datetime.strptime(slot_str, "%I:%M %p").time()
+                except ValueError:
+                    slot_time = datetime.strptime(slot_str, "%H:%M").time()
+
+                if current_date < today or (current_date == today and slot_time < current_time):
+                    passed_slots.add(slot_str)
+
+            taken_slots = free_slots.union(reserved_slots, car_inspection_slots, passed_slots)
+
+            requested_slots = set()
             for slot in slots:
                 try:
                     parsed_time = datetime.strptime(slot.strip(), "%I:%M %p").time()
-
-                    # If date is today and time is in the past, reject
-                    if current_date == today and parsed_time <= current_time:
-                        return Response(
-                            {"message": f"Cannot add past time slot: {slot}."},
-                            status=400,
-                        )
-
-                    formatted_slot = parsed_time.strftime("%I:%M %p")
-                    valid_slots.add(formatted_slot)
                 except ValueError:
                     return Response(
                         {
@@ -3268,18 +3291,37 @@ def add_availability(request):
                         status=400,
                     )
 
-            availability, _ = Availability.objects.get_or_create(
-                inspector=user, date=current_date
-            )
+                if current_date == today and parsed_time <= current_time:
+                    return Response(
+                        {"message": f"Cannot add past time slot: {slot}."},
+                        status=400,
+                    )
 
+                formatted_slot = parsed_time.strftime("%I:%M %p")
+                requested_slots.add(formatted_slot)
+
+            # Check for duplicates
+            duplicates = requested_slots.intersection(taken_slots)
+            if duplicates:
+                return Response(
+                    {
+                        "message": f"These slots are already taken or passed and cannot be added: {', '.join(sorted(duplicates))}"
+                    },
+                    status=400,
+                )
+
+            # No duplicates, safe to add
+            availability, _ = Availability.objects.get_or_create(inspector=user, date=current_date)
             existing_slots = set(availability.time_slots or [])
-            updated_slots = list(existing_slots.union(valid_slots))
-
+            updated_slots = list(existing_slots.union(requested_slots))
             availability.time_slots = sorted(updated_slots)
             availability.save()
 
         return Response(
-            {"message": "Availability slots added successfully."}, status=201
+            {
+                "message": "Availability slots added successfully.",
+            },
+            status=201,
         )
 
     except Exception as e:
@@ -3303,120 +3345,6 @@ def get_seller_appointment_notification(request):
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-# @api_view(["GET"])
-# @permission_classes([AllowAny])
-# def get_free_slots(request):
-#     try:
-#         date = request.query_params.get("date", None)
-#         inspector_id = request.query_params.get("inspector", None)
-
-#         if not inspector_id:
-#             return Response(
-#                 {"message": "Inspector ID is required."},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-
-#         if date:
-#             try:
-#                 date_obj = datetime.strptime(date, "%Y-%m-%d").date()
-#             except ValueError:
-#                 return Response(
-#                     {"message": "Invalid date format. Use YYYY-MM-DD."},
-#                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
-#         else:
-#             date_obj = None
-
-#         availability_queryset = Availability.objects.filter(inspector_id=inspector_id)
-#         if date_obj:
-#             availability_queryset = availability_queryset.filter(date=date_obj)
-
-#         if not availability_queryset.exists():
-#             return Response(
-#                 {
-#                     "message": "No availability records found for the given inspector and date."
-#                 },
-#                 status=status.HTTP_404_NOT_FOUND,
-#             )
-
-#         reserved_slots_queryset = SelectedSlot.objects.filter(inspector_id=inspector_id)
-#         if date_obj:
-#             reserved_slots_queryset = reserved_slots_queryset.filter(date=date_obj)
-
-#         car_inspections = saler_car_details.objects.filter(inspector__id=inspector_id)
-#         if date_obj:
-#             car_inspections = car_inspections.filter(inspection_date=date_obj)
-
-#         taken_slots = set()
-#         unique_reserved_slots = {}
-
-#         for slot in reserved_slots_queryset:
-#             time_str = slot.time_slot.strftime("%I:%M %p")
-#             taken_slots.add(time_str)
-
-#             key = (slot.date, slot.inspector, time_str)
-#             if key not in unique_reserved_slots:
-#                 unique_reserved_slots[key] = {
-#                     "source": "manual",
-#                     "slot_id": slot.id,
-#                     "date": slot.date.strftime("%Y-%m-%d"),
-#                     "inspector": slot.inspector.username,
-#                     "time_slot": time_str,
-#                 }
-
-#         for car in car_inspections:
-#             if car.inspection_time:
-#                 try:
-#                     time_obj = datetime.strptime(car.inspection_time, "%I:%M %p").time()
-#                 except ValueError:
-#                     time_obj = datetime.strptime(car.inspection_time, "%H:%M").time()
-
-#                 time_str = time_obj.strftime("%I:%M %p")
-#                 taken_slots.add(time_str)
-
-#                 key = (car.inspection_date, car.inspector, time_str)
-#                 if key not in unique_reserved_slots:
-#                     unique_reserved_slots[key] = {
-#                         "slot_id": car.saler_car_id,
-#                         "date": car.inspection_date.strftime("%Y-%m-%d"),
-#                         "inspector": car.inspector.username if car.inspector else "",
-#                         "time_slot": time_str,
-#                         "car_name": car.car_name,
-#                         "status": car.status,
-#                     }
-
-#         reserved_slots = list(unique_reserved_slots.values())
-
-#         free_slots = []
-#         for availability in availability_queryset:
-#             available_time_slots = availability.time_slots
-#             available_free_slots = [
-#                 slot for slot in available_time_slots if slot not in taken_slots
-#             ]
-
-#             for slot in available_free_slots:
-#                 free_slots.append(
-#                     {
-#                         "availability_id": availability.id,
-#                         "date": availability.date.strftime("%Y-%m-%d"),
-#                         "inspector": availability.inspector.username,
-#                         "time_slot": slot,
-#                     }
-#                 )
-#         return Response(
-#             {
-#                 "message": "Fetched slots successfully",
-#                 "free_slots": free_slots,
-#                 "reserved_slots": reserved_slots,
-#             },
-#             status=status.HTTP_200_OK,
-#         )
-#     except Exception as e:
-#         return Response(
-#             {"message": f"An unexpected error occurred: {str(e)}"},
-#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#         )
 
 
 @api_view(["GET"])
@@ -3453,9 +3381,7 @@ def get_free_slots(request):
 
         if not availability_queryset.exists():
             return Response(
-                {
-                    "message": "No availability records found for the given inspector and date."
-                },
+                {"message": "No availability records found for the given inspector and date."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -3467,10 +3393,11 @@ def get_free_slots(request):
         if date_obj:
             car_inspections = car_inspections.filter(inspection_date=date_obj)
 
-        taken_slots = set()
+        taken_slots = set()  
         reserved_slots = []
         passed_slots = []
 
+        # Process reserved slots
         for slot in reserved_slots_queryset:
             time_str = slot.time_slot.strftime("%I:%M %p")
             taken_slots.add(time_str)
@@ -3478,14 +3405,11 @@ def get_free_slots(request):
             slot_data = {
                 "slot_id": slot.id,
                 "date": slot.date.strftime("%Y-%m-%d"),
-                # "inspector": slot.inspector.username,
                 "time_slot": time_str,
             }
             reserved_slots.append(slot_data)
 
-            if slot.date < current_date or (
-                slot.date == current_date and slot.time_slot < current_time
-            ):
+            if slot.date < current_date or (slot.date == current_date and slot.time_slot < current_time):
                 passed_slots.append(slot_data)
 
         for car in car_inspections:
@@ -3502,14 +3426,10 @@ def get_free_slots(request):
                     "slot_id": car.saler_car_id,
                     "date": car.inspection_date.strftime("%Y-%m-%d"),
                     "time_slot": time_str,
-                    # "car_name": car.car_name,
-                    # "status": car.status,
                 }
                 reserved_slots.append(slot_data)
 
-                if car.inspection_date < current_date or (
-                    car.inspection_date == current_date and time_obj < current_time
-                ):
+                if car.inspection_date < current_date or (car.inspection_date == current_date and time_obj < current_time):
                     passed_slots.append(slot_data)
 
         free_slots = []
@@ -3530,12 +3450,14 @@ def get_free_slots(request):
                         "time_slot": slot_str,
                     }
 
-                    if availability.date < current_date or (
-                        availability.date == current_date and slot_time < current_time
-                    ):
+                    if availability.date < current_date or (availability.date == current_date and slot_time < current_time):
                         passed_free_slots.append(slot_data)
                     else:
                         free_slots.append(slot_data)
+
+        print("Taken Slots:", taken_slots)
+        for availability in availability_queryset:
+            print("Availability Slots for date:", availability.date, availability.time_slots)
 
         return Response(
             {
@@ -3546,11 +3468,14 @@ def get_free_slots(request):
             },
             status=status.HTTP_200_OK,
         )
-    except Exception as e:
+
+    except Exception as e: 
         return Response(
             {"message": f"An unexpected error occurred: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
 
 
 # GET ALL SLOTS -----NOT USED
