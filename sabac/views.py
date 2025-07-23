@@ -402,7 +402,7 @@ def get_cars_for_approval(request):
         # guest cars
         guest_cars = Guest.objects.filter(status="await_approval")
 
-        if not cars.exists() or not guest_cars.exists():
+        if not cars.exists() and not guest_cars.exists():
             return Response(
                 {"message": "car not found"}, status=status.HTTP_404_NOT_FOUND
             )
