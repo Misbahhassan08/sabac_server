@@ -1,23 +1,23 @@
 import base64
-from datetime import datetime
 import uuid
+from datetime import datetime
+
 from django.core.files.base import ContentFile
 from rest_framework import serializers
+
 from .models import (
+    AdditionalDetails,
+    AssignSlot,
+    Availability,
+    Bidding,
+    DeviceToken,
+    Guest,
+    InspectionReport,
+    Notification,
+    SelectedSlot,
     User,
     saler_car_details,
-    Availability,
-    SelectedSlot,
-    InspectionReport,
-    Bidding,
-    Notification,
-    AssignSlot,
-    AdditionalDetails,
-    Guest,
-    DeviceToken,
 )
-
-
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -60,6 +60,85 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+    #GUEST & CAR DETAIL SERIALIZER    
+class GuestSerializer(serializers.ModelSerializer):
+    inspector_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role="inspector"),
+        source="inspector",
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    inspector = serializers.SerializerMethodField()
+    photos = serializers.ListField(
+        child=serializers.URLField(),
+        required=False,
+        allow_null=True
+    )
+    class Meta:
+        model = Guest
+        fields = [
+            "id",
+            "name",
+            "number",
+            "email",
+            "inspector_id",
+            "inspector",
+            "winner_dealer", 
+            "car_name",
+            "car_variant",
+            "company",
+            "year",
+            "engine_size",
+            "milage",
+            "option_type",
+            "paint_condition",
+            "specs",
+            "photos",
+            "inspection_date",
+            "inspection_time",
+            "status",
+            "is_inspected",
+            "is_sold",
+            "is_manual",
+            "is_booked",
+            "added_by",
+            "bidding_start_time",
+            "bidding_end_time",
+            "demand",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "status",
+            "is_sold",
+            "is_inspected",
+            "created_at",
+            "updated_at",
+            "bidding_start_time",
+            "bidding_end_time",
+            "inspector",
+        ]
+
+    def get_inspector(self, obj):
+        if obj.inspector:
+            return {
+                "id": obj.inspector.id,
+                "name": obj.inspector.get_full_name() or obj.inspector.username,
+                "email": obj.inspector.email
+            }
+        return None
+
+    def validate_inspection_time(self, value):
+        if value:
+            try:
+                datetime.strptime(value.strip(), "%I:%M %p")  # 12-hour format
+            except ValueError:
+                raise serializers.ValidationError("Time must be in 12-hour format, e.g., '02:30 PM'.")
+        return value
+        
+  
 
 # Device token serializer
 class DeviceTokenSerializer(serializers.ModelSerializer):
@@ -168,6 +247,9 @@ class InspectionReportSerializer(serializers.ModelSerializer):
         child=serializers.URLField(), required=False, allow_null=True
     )
     
+    saler_car = SalerCarDetailsSerializer(read_only=True)
+    guest_car = GuestSerializer(read_only=True)
+    
     class Meta:
         model = InspectionReport
         fields = "__all__"
@@ -217,85 +299,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         ]
 
 
-    #GUEST & CAR DETAIL SERIALIZER    
-class GuestSerializer(serializers.ModelSerializer):
-    inspector_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(role="inspector"),
-        source="inspector",
-        write_only=True,
-        required=False,
-        allow_null=True
-    )
-    inspector = serializers.SerializerMethodField()
-    photos = serializers.ListField(
-        child=serializers.URLField(),
-        required=False,
-        allow_null=True
-    )
-    class Meta:
-        model = Guest
-        fields = [
-            "id",
-            "name",
-            "number",
-            "email",
-            "inspector_id",
-            "inspector",
-            "winner_dealer", 
-            "car_name",
-            "car_variant",
-            "company",
-            "year",
-            "engine_size",
-            "milage",
-            "option_type",
-            "paint_condition",
-            "specs",
-            "photos",
-            "inspection_date",
-            "inspection_time",
-            "status",
-            "is_inspected",
-            "is_sold",
-            "is_manual",
-            "is_booked",
-            "added_by",
-            "bidding_start_time",
-            "bidding_end_time",
-            "demand",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = [
-            "id",
-            "status",
-            "is_sold",
-            "is_inspected",
-            "created_at",
-            "updated_at",
-            "bidding_start_time",
-            "bidding_end_time",
-            "inspector",
-        ]
 
-    def get_inspector(self, obj):
-        if obj.inspector:
-            return {
-                "id": obj.inspector.id,
-                "name": obj.inspector.get_full_name() or obj.inspector.username,
-                "email": obj.inspector.email
-            }
-        return None
-
-    def validate_inspection_time(self, value):
-        if value:
-            try:
-                datetime.strptime(value.strip(), "%I:%M %p")  # 12-hour format
-            except ValueError:
-                raise serializers.ValidationError("Time must be in 12-hour format, e.g., '02:30 PM'.")
-        return value
-        
-  
 
 
 class Base64ImageField(serializers.ImageField):

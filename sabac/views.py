@@ -3613,7 +3613,9 @@ def get_inspection_report(request):
     try:
         report = InspectionReport.objects.get(saler_car=car_id)
         serializer = InspectionReportSerializer(report)
+        
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
     except InspectionReport.DoesNotExist:
         return Response(
             {"message": "No report found for this car"},
