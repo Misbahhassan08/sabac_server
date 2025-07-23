@@ -1,9 +1,10 @@
-from datetime import timedelta
-from django.utils import timezone
-from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.conf import settings
 import copy
+from datetime import timedelta
+
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -125,7 +126,7 @@ class saler_car_details(models.Model):
                 self.bidding_end_time = now_time + timedelta(days=10)
 
             if existing_car.status == "in_inspection" and self.status == "bidding":
-                self.is_inspected = True
+                self.is_inspected = True 
 
         if self.status == "sold":
             self.is_sold = True
@@ -138,7 +139,7 @@ class saler_car_details(models.Model):
         ):
             self.status = "expired"
 
-        super().save(*args, **kwargs)
+        super().save(*args, **kwargs) 
 
 
 

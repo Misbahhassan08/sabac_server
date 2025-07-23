@@ -397,15 +397,23 @@ def get_reviewd_inspection(request):
 @permission_classes([IsAuthenticated])
 def get_cars_for_approval(request):
     try:
+        # seller cars
         cars = saler_car_details.objects.filter(status="await_approval")
+        # guest cars
+        guest_cars = Guest.objects.filter(status="await_approval")
 
-        if not cars.exists():
+        if not cars.exists() or not guest_cars.exists():
             return Response(
                 {"message": "car not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = SalerCarDetailsSerializer(cars, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        guest_serializer = GuestSerializer(guest_cars,many=True)
+        
+        return Response({
+            "seller_cars": serializer.data,
+            "guest_cars": guest_serializer.data
+        }, status=status.HTTP_200_OK)
 
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
