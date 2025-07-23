@@ -4349,6 +4349,7 @@ def guest_inspection_report_post(request):
         report = serializer.save(inspector=user, guest_car=car)
 
         car.is_inspected = True
+        car.status = "await_approval"
         car.save()
 
         return Response(
@@ -4405,6 +4406,7 @@ def post_guest_inspection_report_mob(request):
         report = serializer.save(inspector=user, guest_car=car)
 
         car.is_inspected = True
+        car.status = "await_approval"
         car.save()
 
         # Optional Notification if guest user exists (enable only if needed)
