@@ -1007,6 +1007,7 @@ def accept_bid(request, bid_id):
 
     car = bid.saler_car or bid.guest_car
     car.is_sold = True
+    car.status = "sold"
     car.winner_dealer = bid.dealer
     car.save()
 
@@ -1028,12 +1029,13 @@ def accept_bid(request, bid_id):
         bid=bid,
         category="bid_accepted",
     )
-    Notification.objects.create(
-        recipient=car.user,
-        message=f"Your car {car.company} {car.car_name} {car.year} has been sold.",
-        category="car_sold",
-        saler_car=car,
-    )
+    if bid.saler_car:
+        Notification.objects.create(
+            recipient=car.user,
+            message=f"Your car {car.company} {car.car_name} {car.year} has been sold.",
+            category="car_sold",
+            saler_car=car,
+        )
 
     return Response(
         {"message": "Bid accepted and car marked as sold"},
