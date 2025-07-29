@@ -8,8 +8,7 @@ my_default_json = {
             "carModel": "",
             "carName": "",
             "carVariant":"",
-            "company": "",
-            "variant":""
+            "company": ""
         },
         "techSpecs": {
             "assembly": "",
