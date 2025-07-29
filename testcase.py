@@ -8,7 +8,8 @@ my_default_json = {
             "carModel": "",
             "carName": "",
             "carVariant":"",
-            "company": ""
+            "company": "",
+            "variant":""
         },
         "techSpecs": {
             "assembly": "",
@@ -165,10 +166,10 @@ my_default_json = {
                     "Paint": {"Original": 0, "Repainted": 0},
                     "Seals": {"Ok": 0, "Damaged": 0, "Repaired": 0},
                 },
-                "Rear Right Door": {
-                    "Paint": {"Original": 0, "Repainted": 0},
-                    "Seals": {"Ok": 0, "Damaged": 0, "Repaired": 0},
-                },
+                # "Rear Right Door": {
+                #     "Paint": {"Original": 0, "Repainted": 0},
+                #     "Seals": {"Ok": 0, "Damaged": 0, "Repaired": 0},
+                # },
                 "Rear Left Door": {
                     "Paint": {"Original": 0, "Repainted": 0},
                     "Seals": {"Ok": 0, "Damaged": 0, "Repaired": 0},
