@@ -1292,6 +1292,93 @@ def get_all_sold_cars(request):
             }
         )
         return Response(result)
+    
+# bidding time setup set car Live duration
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def set_up_live_duration(request):
+    car_id = request.data.get("car_id")
+    custom_end_date = request.data.get("custom_end_date")
+    
+    if not car_id or not custom_end_date:
+        return Response({"message" :"car id and end date are required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        car = saler_car_details.objects.get(saler_car_id = car_id)
+    except saler_car_details.DoesNotExist:
+        return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    if car.status != "bidding":
+        return Response({"message" : "car is not in Live yet"},status=status.HTTP_400_BAD_REQUEST)
+    
+    if not car.bidding_start_time:
+        return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        end_date = datetime.strptime(custom_end_date, "%Y-%m-%d")
+        end_date = timezone.make_aware(end_date)
+        
+    except:
+        return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+    
+        # Validate it's after start time
+    if end_date <= car.bidding_start_time:
+        return Response({"error": "End date must be after bidding start time."}, status=400)
+
+    car.bidding_end_time = end_date
+    
+    if timezone.now() > end_date:
+        car.status = "expired"
+        
+    car.save()
+
+    return Response(SalerCarDetailsSerializer(car).data, status=200)
+
+
+# bidding time setup set car Live duration for guest
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def set_up_live_duration_guest_car(request):
+    car_id = request.data.get("car_id")
+    custom_end_date = request.data.get("custom_end_date")
+    
+    if not car_id or not custom_end_date:
+        return Response({"message" :"car id and end date are required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        car = Guest.objects.get(id = car_id)
+    except Guest.DoesNotExist:
+        return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    if car.status != "bidding":
+        return Response({"message" : "car is not in Live yet"},status=status.HTTP_400_BAD_REQUEST)
+    
+    if not car.bidding_start_time:
+        return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        end_date = datetime.strptime(custom_end_date, "%Y-%m-%d")
+        end_date = timezone.make_aware(end_date)
+        
+    except:
+        return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+    
+        # Validate it's after start time
+    if end_date <= car.bidding_start_time:
+        return Response({"error": "End date must be after bidding start time."}, status=400)
+
+    car.bidding_end_time = end_date
+    
+    if timezone.now() > end_date:
+        car.status = "expired"
+        
+    car.save()
+
+    return Response(SalerCarDetailsSerializer(car).data, status=200)
+    
+        
+        
+
 
 
 # /////////////////////////////////////SELLER APIs/////////////////////////////////////////

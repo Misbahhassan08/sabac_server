@@ -86,6 +86,8 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     saler_register,
     saler_update,
     seller_manual_entries,
+    set_up_live_duration,
+    set_up_live_duration_guest_car,
     update_ad,
     update_car_details,
     update_car_status,
@@ -338,6 +340,8 @@ urlpatterns = [
     path("request_reset_password/",request_reset_password,name="request_reset_password"),
     path("confirm_reset_password/",confirm_reset_password,name="confirm_reset_password"),
     path("update_guest_status/<int:guest_id>/",update_guest_status,name="update_guest_status"),
+    path("set_up_live_duration/",set_up_live_duration,name="set_up_live_duration"),
+    path("set_up_live_duration_guest_car/",set_up_live_duration_guest_car,name="set_up_live_duration_guest_car")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
