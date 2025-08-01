@@ -49,6 +49,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     get_manual_entries_for_inspector,
     get_manual_guest_cars_for_inspector,
     get_manual_saler_assigned_slots,
+    get_max_bid,
     get_notifications,
     get_reviewd_inspection,
     get_selected_slots,
@@ -341,7 +342,8 @@ urlpatterns = [
     path("confirm_reset_password/",confirm_reset_password,name="confirm_reset_password"),
     path("update_guest_status/<int:guest_id>/",update_guest_status,name="update_guest_status"),
     path("set_up_live_duration/",set_up_live_duration,name="set_up_live_duration"),
-    path("set_up_live_duration_guest_car/",set_up_live_duration_guest_car,name="set_up_live_duration_guest_car")
+    path("set_up_live_duration_guest_car/",set_up_live_duration_guest_car,name="set_up_live_duration_guest_car"),
+    path("get_max_bid/",get_max_bid,name="get_max_bid")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     

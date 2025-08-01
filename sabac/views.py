@@ -371,6 +371,46 @@ def get_highest_bid(request):
         )
 
 
+# get max bid of specefic car
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_max_bid(request):
+    car_type = request.query_params.get("type")
+    car_id = request.query_params.get("car_id")
+    
+    if not car_type or not car_id:
+        return Response({"message" : " car id and type both are required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        car_id = int(car_id)
+    except ValueError:
+        return Response({'error' :"car id must b integer"},status=status.HTTP_400_BAD_REQUEST)
+    
+    if car_type == "seller":
+        try:
+            car = saler_car_details.objects.get(saler_car_id = car_id)
+        except saler_car_details.DoesNotExist:
+            return Response({"message" : "car not found"},status= status.HTTP_404_NOT_FOUND)
+        max_bid = Bidding.objects.filter(saler_car=car).aggregate(Max("bid_amount"))["bid_amount__max"]
+        
+    elif car_type == "guest":
+        try:
+            car = Guest.objects.get(id = car_id)
+        except Guest.DoesNotExist:
+            return Response({"message" :"Guest car not found"},status=status.HTTP_404_NOT_FOUND)
+        
+        max_bid = Bidding.objects.filter(guest_car=car).aggregate(Max("bid_amount"))["bid_amount__max"]
+        
+    else:
+        return Response({"message" : "type must be saler or guest"},status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    return Response({
+        "car_id" : car_id,
+        "car_type" : car_type,
+        "max_bid":max_bid
+    },status=status.HTTP_200_OK)
+
 # get list of cars accepted or rejected
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
