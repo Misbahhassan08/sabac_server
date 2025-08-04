@@ -100,6 +100,8 @@ class saler_car_details(models.Model):
     bidding_start_time = models.DateTimeField(null=True, blank=True)
     bidding_end_time = models.DateTimeField(null=True, blank=True)
     demand= models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
+    min_bid_amount  = models.DecimalField(max_digits=60,decimal_places=2,null=True,blank=True)
+
 
 
     def start_bidding(self):
@@ -195,6 +197,7 @@ class Guest(models.Model):
     bidding_start_time = models.DateTimeField(null=True, blank=True)
     bidding_end_time = models.DateTimeField(null=True, blank=True)
     demand = models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
+    min_bid_amount  = models.DecimalField(max_digits=60,decimal_places=2,null=True,blank=True)
 
 
     def start_bidding(self):

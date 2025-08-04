@@ -464,9 +464,17 @@ def get_cars_for_approval(request):
 @permission_classes([IsAuthenticated])
 def approve_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
+    min_bid = request.data.get("min_bid_amount")
+    
+    if not min_bid:
+        return Response({"message" : "Minimum amount for bid is required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    
 
     if report.saler_car and report.saler_car.status == "await_approval":
+        car = report.saler_car
         report.saler_car.status = "bidding"
+        car.min_bid_amount = min_bid
         report.saler_car.save()
 
         # notification for seller
@@ -1338,10 +1346,15 @@ def get_all_sold_cars(request):
 @permission_classes([IsAuthenticated])
 def set_up_live_duration(request):
     car_id = request.data.get("car_id")
-    custom_end_date = request.data.get("custom_end_date")
+    date = request.data.get("date")
+    time = request.data.get("time")
     
-    if not car_id or not custom_end_date:
-        return Response({"message" :"car id and end date are required"},status=status.HTTP_400_BAD_REQUEST)
+    print("car id",car_id)
+    print("data:",date)
+    print("time",time)
+    
+    if not car_id or not date or not time:
+        return Response({"message" :"car id end date and time are required"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
         car = saler_car_details.objects.get(saler_car_id = car_id)
@@ -1355,19 +1368,20 @@ def set_up_live_duration(request):
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        end_date = datetime.strptime(custom_end_date, "%Y-%m-%d")
-        end_date = timezone.make_aware(end_date)
+        full_str = f"{date} {time}"
+        naive_end_time = datetime.strptime(full_str, "%Y-%m-%d %I:%M %p")
+        aware_end_time = timezone.make_aware(naive_end_time)
         
     except:
-        return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+        return Response({"error": "Invalid date or time format. Use YYYY-MM-DD and 12 hours format e.g: '02:30 PM'."}, status=400)
     
-        # Validate it's after start time
-    if end_date <= car.bidding_start_time:
+        
+    if aware_end_time <= car.bidding_start_time:
         return Response({"error": "End date must be after bidding start time."}, status=400)
 
-    car.bidding_end_time = end_date
+    car.bidding_end_time = aware_end_time
     
-    if timezone.now() > end_date:
+    if timezone.now() > aware_end_time:
         car.status = "expired"
         
     car.save()
@@ -1380,10 +1394,11 @@ def set_up_live_duration(request):
 @permission_classes([IsAuthenticated])
 def set_up_live_duration_guest_car(request):
     car_id = request.data.get("car_id")
-    custom_end_date = request.data.get("custom_end_date")
+    date = request.data.get("date")
+    time = request.data.get('time')
     
-    if not car_id or not custom_end_date:
-        return Response({"message" :"car id and end date are required"},status=status.HTTP_400_BAD_REQUEST)
+    if not car_id or not date or not time:
+        return Response({"message" :"car id end date and time are required"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
         car = Guest.objects.get(id = car_id)
@@ -1397,19 +1412,20 @@ def set_up_live_duration_guest_car(request):
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        end_date = datetime.strptime(custom_end_date, "%Y-%m-%d")
-        end_date = timezone.make_aware(end_date)
+        full_str = f"{date} {time}"
+        naive_time = datetime.strptime(full_str, "%Y-%m-%d %I:%M %p")
+        aware_end_time = timezone.make_aware(naive_time)
         
     except:
         return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
     
         # Validate it's after start time
-    if end_date <= car.bidding_start_time:
+    if aware_end_time <= car.bidding_start_time:
         return Response({"error": "End date must be after bidding start time."}, status=400)
 
-    car.bidding_end_time = end_date
+    car.bidding_end_time = aware_end_time
     
-    if timezone.now() > end_date:
+    if timezone.now() > aware_end_time:
         car.status = "expired"
         
     car.save()
@@ -4675,9 +4691,16 @@ def get_bidding_cars_by_guest(request):
 @permission_classes([IsAuthenticated])
 def approve_guest_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
+    min_bid = request.data.get("min_bid_amount")
+    
+    if not min_bid:
+        return Response({"message" : "Minimum bid amout is required"},status=status.HTTP_400_BAD_REQUEST)
+    
 
     if report.guest_car and report.guest_car.status == "await_approval":
+        car = report.guest_car
         report.guest_car.status = "bidding"
+        car.min_bid_amount = min_bid
         report.guest_car.save()
 
         # Notify all dealers
