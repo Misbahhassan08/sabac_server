@@ -464,17 +464,10 @@ def get_cars_for_approval(request):
 @permission_classes([IsAuthenticated])
 def approve_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
-    min_bid = request.data.get("min_bid_amount")
-    
-    if not min_bid:
-        return Response({"message" : "Minimum amount for bid is required"},status=status.HTTP_400_BAD_REQUEST)
-    
-    
 
     if report.saler_car and report.saler_car.status == "await_approval":
         car = report.saler_car
         report.saler_car.status = "bidding"
-        car.min_bid_amount = min_bid
         report.saler_car.save()
 
         # notification for seller
@@ -506,6 +499,40 @@ def approve_inspection(request, report_id):
         },
         status=status.HTTP_400_BAD_REQUEST,
     )
+    
+    
+# set minimum bid for seller car
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def set_up_minimum_bid_seller_car(request, car_id):
+    min_bid_amount = request.data.get("min_bid_amount")
+    
+    if not min_bid_amount:
+        return Response({"message" : "amount is required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        min_bid_amount = float(min_bid_amount)
+        if min_bid_amount<=0:
+            return Response({"message" : "amount must be grater than Zero"},status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({"message" : "invalid Amount"},status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    car = get_object_or_404(saler_car_details , saler_car_id=car_id)
+    
+    car.min_bid_amount = min_bid_amount
+    car.save()
+    
+    return Response({
+        "message" : "minimum bid set successfully",
+        "car_id" : car_id,
+        "minimum_bid_amount":min_bid_amount
+        
+    },status=status.HTTP_200_OK)
+    
+    
+    
+
 
 
 # ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER
@@ -4691,16 +4718,10 @@ def get_bidding_cars_by_guest(request):
 @permission_classes([IsAuthenticated])
 def approve_guest_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
-    min_bid = request.data.get("min_bid_amount")
-    
-    if not min_bid:
-        return Response({"message" : "Minimum bid amout is required"},status=status.HTTP_400_BAD_REQUEST)
-    
 
     if report.guest_car and report.guest_car.status == "await_approval":
         car = report.guest_car
         report.guest_car.status = "bidding"
-        car.min_bid_amount = min_bid
         report.guest_car.save()
 
         # Notify all dealers
@@ -4722,6 +4743,38 @@ def approve_guest_inspection(request, report_id):
         {"message": "Guest car is not in await_approval status or not linked properly"},
         status=status.HTTP_400_BAD_REQUEST,
     )
+
+
+
+# set minimum bid for guest car
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def set_up_minimum_bid_guest_car(request, car_id):
+    min_bid_amount = request.data.get("min_bid_amount")
+    
+    if not min_bid_amount:
+        return Response({"message" : "amount is required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        min_bid_amount = float(min_bid_amount)
+        if min_bid_amount<=0:
+            return Response({"message" : "amount must be grater than Zero"},status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({"message" : "invalid Amount"},status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    car = get_object_or_404(Guest , id=car_id)
+    
+    car.min_bid_amount = min_bid_amount
+    car.save()
+    
+    return Response({
+        "message" : "minimum bid set successfully",
+        "car_id" : car_id,
+        "minimum_bid_amount":min_bid_amount
+        
+    },status=status.HTTP_200_OK)
+    
 
 
 # Admin reject Guest car inspection
