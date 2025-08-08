@@ -94,12 +94,14 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     update_ad,
     update_car_details,
     update_car_status,
+    update_guest_car_asking_price,
     update_guest_status,
     update_image,
     update_inspection_report,
     update_inspection_report_mob,
     update_is_booked,
     update_is_manual,
+    update_seller_car_asking_price,
     update_status,
     usersList,
     view_car_bids,
@@ -347,7 +349,9 @@ urlpatterns = [
     path("set_up_live_duration_guest_car/",set_up_live_duration_guest_car,name="set_up_live_duration_guest_car"),
     path("get_max_bid/",get_max_bid,name="get_max_bid"),
     path("set_up_minimum_bid_seller_car/<int:car_id>",set_up_minimum_bid_seller_car,name="set_up_minimum_bid_seller_car"),
-    path("set_up_minimum_bid_guest_car/<int:car_id>",set_up_minimum_bid_guest_car,name="set_up_minimum_bid_guest_car")
+    path("set_up_minimum_bid_guest_car/<int:car_id>",set_up_minimum_bid_guest_car,name="set_up_minimum_bid_guest_car"),
+    path("update_seller_car_asking_price/<int:car_id>",update_seller_car_asking_price,name="update_seller_car_asking_price"),
+    path("update_guest_car_asking_price/<int:car_id>",update_guest_car_asking_price,name="update_guest_car_asking_price")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     

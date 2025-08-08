@@ -314,6 +314,59 @@ def is_authentecated(request):
 
 
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
+# asking price update of seller car
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_seller_car_asking_price(request , car_id):
+    asking_price = request.data.get("asking_price")
+    
+    if not asking_price:
+        return Response({"message" : "Price is required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        asking_price = float(asking_price)
+        
+        if asking_price <= 0:
+            return Response({"message" : "Price greater than Zero"},status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({"message" :"invlaid Amount"},status=status.HTTP_400_BAD_REQUEST)
+    
+    car = get_object_or_404(saler_car_details, saler_car_id=car_id)
+    
+    car.demand = asking_price
+    car.save()
+    return Response({"message" : "Price set successfully",
+                     "car_id":car_id,
+                     "asking_price":asking_price
+                     },status=status.HTTP_200_OK)
+    
+    
+# asking price update of guest car
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_guest_car_asking_price(request , car_id):
+    asking_price = request.data.get("asking_price")
+    
+    if not asking_price:
+        return Response({"message" : "Price is required"},status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        asking_price = float(asking_price)
+        
+        if asking_price <= 0:
+            return Response({"message" : "Price greater than Zero"},status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({"message" :"invlaid Amount"},status=status.HTTP_400_BAD_REQUEST)
+    
+    car = get_object_or_404(Guest, id=car_id)
+    
+    car.demand = asking_price
+    car.save()
+    return Response({"message" : "Price set successfully",
+                     "car_id":car_id,
+                     "asking_price":asking_price
+                     },status=status.HTTP_200_OK)
+
 
 
 # cars count with status bidding
@@ -3862,6 +3915,7 @@ def get_guest_car_details(request):
 # ///////////////////////////DEALERS APIs/////////////////////////
 
 
+
 # bidding cars status for dealer and admin
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -4984,6 +5038,14 @@ def mark_as_inspected(request, car_id):
     return Response(
         {"message": "Car marked as inspected", "is_inspected": car.is_inspected}
     )
+
+
+
+
+
+
+
+
 
     # /////////////////////////////////////////////////////////////////////////////////////////////////
 
