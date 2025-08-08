@@ -1422,19 +1422,20 @@ def get_all_sold_cars(request):
         return Response(result)
     
 # bidding time setup set car Live duration
-@api_view(["POST"])
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def set_up_live_duration(request):
+    # request data
     car_id = request.data.get("car_id")
-    date = request.data.get("date")
-    time = request.data.get("time")
+    days = request.data.get("days",0)
+    hours = request.data.get("hours",0)
+    minutes = request.data.get("minutes",0)
+    seconds = request.data.get("seconds",0)
     
-    print("car id",car_id)
-    print("data:",date)
-    print("time",time)
+
     
-    if not car_id or not date or not time:
-        return Response({"message" :"car id end date and time are required"},status=status.HTTP_400_BAD_REQUEST)
+    if not car_id :
+        return Response({"message" :"car id is required"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
         car = saler_car_details.objects.get(saler_car_id = car_id)
@@ -1444,41 +1445,68 @@ def set_up_live_duration(request):
     if car.status != "bidding":
         return Response({"message" : "car is not in Live yet"},status=status.HTTP_400_BAD_REQUEST)
     
-    if not car.bidding_start_time:
+    if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        full_str = f"{date} {time}"
-        naive_end_time = datetime.strptime(full_str, "%Y-%m-%d %I:%M %p")
-        aware_end_time = timezone.make_aware(naive_end_time)
+        days = int(days)
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds)
         
-    except:
-        return Response({"error": "Invalid date or time format. Use YYYY-MM-DD and 12 hours format e.g: '02:30 PM'."}, status=400)
+    except ValueError:
+        return Response({"error": "Invalid values"}, status=status.HTTP_400_BAD_REQUEST)
     
-        
-    if aware_end_time <= car.bidding_start_time:
-        return Response({"error": "End date must be after bidding start time."}, status=400)
-
-    car.bidding_end_time = aware_end_time
+    delta = timedelta(days=days , hours=hours , minutes=minutes , seconds=seconds)
     
-    if timezone.now() > aware_end_time:
+    car.bidding_end_time += delta
+    
+    if car.bidding_end_time <= timezone.now():
         car.status = "expired"
-        
     car.save()
+    
+    remaining = car.bidding_end_time - timezone.now()
+    
+    if car.status == "expired":
+        remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+    else:
+        remaining_days = remaining.days
+        remaining_seconds = remaining.seconds
+        remaining_hours = remaining_seconds // 3600
+        remaining_minutes = (remaining_seconds % 3600) // 60
+        remaining_seconds = remaining_seconds % 60
+    
+    return Response({
+        "message" : "Live Duration updated badi mushkill se",
+        "car_id" : car.saler_car_id,
+        "new_end_time":car.bidding_end_time,
+        "remaing_time" :{
+            "days" : remaining_days,
+            "hours" : remaining_hours,
+            "minutes": remaining_minutes,
+            "seconds" :remaining_seconds
+        },
+        "status":car.status
+    },status=status.HTTP_200_OK)
 
-    return Response(SalerCarDetailsSerializer(car).data, status=200)
+
 
 
 # bidding time setup set car Live duration for guest
-@api_view(["POST"])
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def set_up_live_duration_guest_car(request):
+     # request data
     car_id = request.data.get("car_id")
-    date = request.data.get("date")
-    time = request.data.get('time')
+    days = request.data.get("days",0)
+    hours = request.data.get("hours",0)
+    minutes = request.data.get("minutes",0)
+    seconds = request.data.get("seconds",0)
     
-    if not car_id or not date or not time:
-        return Response({"message" :"car id end date and time are required"},status=status.HTTP_400_BAD_REQUEST)
+
+    
+    if not car_id :
+        return Response({"message" :"car id is required"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
         car = Guest.objects.get(id = car_id)
@@ -1488,29 +1516,49 @@ def set_up_live_duration_guest_car(request):
     if car.status != "bidding":
         return Response({"message" : "car is not in Live yet"},status=status.HTTP_400_BAD_REQUEST)
     
-    if not car.bidding_start_time:
+    if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        full_str = f"{date} {time}"
-        naive_time = datetime.strptime(full_str, "%Y-%m-%d %I:%M %p")
-        aware_end_time = timezone.make_aware(naive_time)
+        days = int(days)
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds)
         
-    except:
-        return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=400)
+    except ValueError:
+        return Response({"error": "Invalid values"}, status=status.HTTP_400_BAD_REQUEST)
     
-        # Validate it's after start time
-    if aware_end_time <= car.bidding_start_time:
-        return Response({"error": "End date must be after bidding start time."}, status=400)
-
-    car.bidding_end_time = aware_end_time
+    delta = timedelta(days=days , hours=hours , minutes=minutes , seconds=seconds)
     
-    if timezone.now() > aware_end_time:
+    car.bidding_end_time += delta
+    
+    if car.bidding_end_time <= timezone.now():
         car.status = "expired"
-        
     car.save()
-
-    return Response(SalerCarDetailsSerializer(car).data, status=200)
+    
+    remaining = car.bidding_end_time - timezone.now()
+    
+    if car.status == "expired":
+        remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+    else:
+        remaining_days = remaining.days
+        remaining_seconds = remaining.seconds
+        remaining_hours = remaining_seconds // 3600
+        remaining_minutes = (remaining_seconds % 3600) // 60
+        remaining_seconds = remaining_seconds % 60
+    
+    return Response({
+        "message" : "Live Duration updated badi mushkill se",
+        "car_id" : car.id,
+        "new_end_time":car.bidding_end_time,
+        "remaing_time" :{
+            "days" : remaining_days,
+            "hours" : remaining_hours,
+            "minutes": remaining_minutes,
+            "seconds" :remaining_seconds
+        },
+        "status":car.status
+    },status=status.HTTP_200_OK)
     
         
         
