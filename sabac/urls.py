@@ -94,6 +94,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     update_ad,
     update_car_details,
     update_car_status,
+    update_default_end_time_bidding_guest_car,
     update_default_end_time_bidding_seller_car,
     update_guest_car_asking_price,
     update_guest_status,
@@ -353,7 +354,8 @@ urlpatterns = [
     path("set_up_minimum_bid_guest_car/<int:car_id>",set_up_minimum_bid_guest_car,name="set_up_minimum_bid_guest_car"),
     path("update_seller_car_asking_price/<int:car_id>",update_seller_car_asking_price,name="update_seller_car_asking_price"),
     path("update_guest_car_asking_price/<int:car_id>",update_guest_car_asking_price,name="update_guest_car_asking_price"),
-    path("update_default_end_time_bidding_seller_car/<int:car_id>",update_default_end_time_bidding_seller_car,name="update_default_end_time_bidding")
+    path("update_default_end_time_bidding_seller_car/<int:car_id>",update_default_end_time_bidding_seller_car,name="update_default_end_time_bidding"),
+    path("update_default_end_time_bidding_guest_car/<int:car_id>",update_default_end_time_bidding_guest_car,name="update_default_end_time_bidding_guest_car")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
