@@ -314,6 +314,64 @@ def is_authentecated(request):
 
 
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
+
+# update the defualt bidding time seller car
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_default_end_time_bidding_seller_car(request, car_id):
+    days = int(request.data.get("days",0))
+    hours = int(request.data.get("hours",0))
+    minutes = int(request.data.get("minutes",0))
+    seconds = int(request.data.get("seconds",0))
+    
+    car = get_object_or_404(saler_car_details, saler_car_id=car_id)
+    
+    if car.status != "bidding":
+        return Response({"message" : "car is not yet Live"},status=status.HTTP_400_BAD_REQUEST)
+    
+    now_time = timezone.now()
+    car.bidding_start_time = now_time
+    car.bidding_end_time = now_time + timedelta(
+        days=days,
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds
+    )
+    car.save()
+    
+    # calculating the remaining time
+    remaining_time = car.bidding_end_time - car.bidding_start_time
+    if remaining_time.total_seconds() <= 0:
+        days = hours = minutes = seconds = 0
+    else:
+        
+
+        days = remaining_time.days
+        remaining_seconds = remaining_time.seconds
+        
+        hours = remaining_seconds // 3600
+        minutes = (remaining_seconds % 3600) // 60
+        seconds = remaining_seconds % 60 
+        return Response({
+            "message" : "Live duration updated",
+            "start_time": car.bidding_start_time,
+            "end_time": car.bidding_end_time,
+            "remaining_time" : {
+                "days":days,
+                "hours" : hours,
+                "minutes": minutes,
+                "seconds": seconds
+            }
+        },status=status.HTTP_200_OK)
+    
+    
+    
+    
+    
+
+
+
+
 # asking price update of seller car
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
