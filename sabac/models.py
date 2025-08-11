@@ -104,10 +104,10 @@ class saler_car_details(models.Model):
 
 
 
-    def start_bidding(self):
-        self.bidding_start_time = timezone.now()
-        self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
-        self.save()
+    # def start_bidding(self):
+    #     self.bidding_start_time = timezone.now()
+    #     self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
+    #     self.save()
 
     def is_bidding_active(self):
         now_time = timezone.now()
@@ -118,28 +118,28 @@ class saler_car_details(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        now_time = timezone.now()
+        # now_time = timezone.now()
 
-        if self.pk:
-            existing_car = saler_car_details.objects.get(pk=self.pk)
+        # if self.pk:
+        #     existing_car = saler_car_details.objects.get(pk=self.pk)
 
-            if existing_car.status != "bidding" and self.status == "bidding":
-                self.bidding_start_time = now_time
-                self.bidding_end_time = now_time + timedelta(days=10)
+        #     if existing_car.status != "bidding" and self.status == "bidding":
+        #         self.bidding_start_time = now_time
+        #         self.bidding_end_time = now_time + timedelta(days=10)
 
-            if existing_car.status == "in_inspection" and self.status == "bidding":
-                self.is_inspected = True 
+        #     if existing_car.status == "in_inspection" and self.status == "bidding":
+        #         self.is_inspected = True 
 
         if self.status == "sold":
             self.is_sold = True
 
-        if (
-            self.status == "bidding"
-            and self.bidding_end_time
-            and now_time > self.bidding_end_time
-            and not self.is_sold
-        ):
-            self.status = "expired"
+        # if (
+        #     self.status == "bidding"
+        #     and self.bidding_end_time
+        #     and now_time > self.bidding_end_time
+        #     and not self.is_sold
+        # ):
+        #     self.status = "expired"
 
         super().save(*args, **kwargs) 
 
@@ -200,10 +200,10 @@ class Guest(models.Model):
     min_bid_amount  = models.DecimalField(max_digits=60,decimal_places=2,null=True,blank=True)
 
 
-    def start_bidding(self):
-        self.bidding_start_time = timezone.now()
-        self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
-        self.save()
+    # def start_bidding(self):
+    #     self.bidding_start_time = timezone.now()
+    #     self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
+    #     self.save()
 
     def is_bidding_active(self):
         now_time = timezone.now()
@@ -214,28 +214,28 @@ class Guest(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        now_time = timezone.now()
+        # now_time = timezone.now()
 
-        if self.pk:
-            existing_guest = Guest.objects.get(pk=self.pk)
+        # if self.pk:
+        #     existing_guest = Guest.objects.get(pk=self.pk)
 
-            if existing_guest.status != "bidding" and self.status == "bidding":
-                self.bidding_start_time = now_time
-                self.bidding_end_time = now_time + timedelta(days=10)
+        #     if existing_guest.status != "bidding" and self.status == "bidding":
+        #         self.bidding_start_time = now_time
+        #         self.bidding_end_time = now_time + timedelta(days=10)
 
-            if existing_guest.status == "in_inspection" and self.status == "bidding":
-                self.is_inspected = True
+        #     if existing_guest.status == "in_inspection" and self.status == "bidding":
+        #         self.is_inspected = True
 
         if self.status == "sold":
             self.is_sold = True
 
-        if (
-            self.status == "bidding"
-            and self.bidding_end_time
-            and now_time > self.bidding_end_time
-            and not self.is_sold
-        ):
-            self.status = "expired"
+        # if (
+        #     self.status == "bidding"
+        #     and self.bidding_end_time
+        #     and now_time > self.bidding_end_time
+        #     and not self.is_sold
+        # ):
+        #     self.status = "expired"
         super().save(*args, **kwargs)
 
     

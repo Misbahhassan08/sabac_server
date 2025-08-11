@@ -9,6 +9,7 @@ from venv import logger
 
 import cloudinary.api
 import cloudinary.uploader
+import pytz
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
@@ -316,100 +317,146 @@ def is_authentecated(request):
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
 
 # update the defualt bidding time seller car
-@api_view(['PUT'])
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_seller_car(request, car_id):
-    days = int(request.data.get("days",0))
-    hours = int(request.data.get("hours",0))
-    minutes = int(request.data.get("minutes",0))
-    seconds = int(request.data.get("seconds",0))
-    
+    # Get car
     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
-    
 
-    
-    now_time = timezone.now()
-    car.bidding_start_time = now_time
-    car.bidding_end_time = now_time + timedelta(
-        days=days,
-        hours=hours,
-        minutes=minutes,
-        seconds=seconds
-    )
+    # Get posted values
+    days = int(request.data.get("days", 0))
+    hours = int(request.data.get("hours", 0))
+    minutes = int(request.data.get("minutes", 0))
+    seconds = int(request.data.get("seconds", 0))
+
+    # Set start and end time
+    start_time_utc = timezone.now()
+    end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+    car.bidding_start_time = start_time_utc
+    car.bidding_end_time = end_time_utc
     car.save()
-    
-    # calculating the remaining time
-    remaining_time = car.bidding_end_time - car.bidding_start_time
-    if remaining_time.total_seconds() <= 0:
-        days = hours = minutes = seconds = 0
-    else:
-        
 
-        days = remaining_time.days
-        remaining_seconds = remaining_time.seconds
-        
-        hours = remaining_seconds // 3600
-        minutes = (remaining_seconds % 3600) // 60
-        seconds = remaining_seconds % 60 
-        return Response({
-            "message" : "Live duration updated",
-            "start_time": car.bidding_start_time,
-            "end_time": car.bidding_end_time,
-            "remaining_time" : {
-                "days":days,
-                "hours" : hours,
-                "minutes": minutes,
-                "seconds": seconds
-            }
-        },status=status.HTTP_200_OK)
-    
-# update the defualt bidding time guest
-@api_view(['PUT'])
+    # Convert to local timezone
+    pk_timezone = pytz.timezone("Asia/Karachi")
+    start_time_local = start_time_utc.astimezone(pk_timezone)
+    end_time_local = end_time_utc.astimezone(pk_timezone)
+
+    # Calculate remaining time
+    remaining = end_time_local - timezone.now().astimezone(pk_timezone)
+    remaining_days = remaining.days
+    remaining_seconds = remaining.seconds
+    remaining_hours = remaining_seconds // 3600
+    remaining_minutes = (remaining_seconds % 3600) // 60
+    remaining_seconds = remaining_seconds % 60
+
+    return Response({
+        "message": "Live duration updated",
+        "start_time": start_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "remaining_time": {
+            "days": remaining_days,
+            "hours": remaining_hours,
+            "minutes": remaining_minutes,
+            "seconds": remaining_seconds
+        }
+    })
+
+# update the defualt bidding time guest car
+@api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_guest_car(request, car_id):
-    days = int(request.data.get("days",0))
-    hours = int(request.data.get("hours",0))
-    minutes = int(request.data.get("minutes",0))
-    seconds = int(request.data.get("seconds",0))
-    
+    # Get car
     car = get_object_or_404(Guest, id=car_id)
-    
 
-    
-    now_time = timezone.now()
-    car.bidding_start_time = now_time
-    car.bidding_end_time = now_time + timedelta(
-        days=days,
-        hours=hours,
-        minutes=minutes,
-        seconds=seconds
-    )
+    # Get posted values
+    days = int(request.data.get("days", 0))
+    hours = int(request.data.get("hours", 0))
+    minutes = int(request.data.get("minutes", 0))
+    seconds = int(request.data.get("seconds", 0))
+
+    # Set start and end time
+    start_time_utc = timezone.now()
+    end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+    car.bidding_start_time = start_time_utc
+    car.bidding_end_time = end_time_utc
     car.save()
+
+    # Convert to local timezone
+    pk_timezone = pytz.timezone("Asia/Karachi")
+    start_time_local = start_time_utc.astimezone(pk_timezone)
+    end_time_local = end_time_utc.astimezone(pk_timezone)
+
+    # Calculate remaining time
+    remaining = end_time_local - timezone.now().astimezone(pk_timezone)
+    remaining_days = remaining.days
+    remaining_seconds = remaining.seconds
+    remaining_hours = remaining_seconds // 3600
+    remaining_minutes = (remaining_seconds % 3600) // 60
+    remaining_seconds = remaining_seconds % 60
+
+    return Response({
+        "message": "Live duration updated",
+        "start_time": start_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "remaining_time": {
+            "days": remaining_days,
+            "hours": remaining_hours,
+            "minutes": remaining_minutes,
+            "seconds": remaining_seconds
+        }
+    })
+
+
+
+# update the defualt bidding time guest
+# @api_view(['PUT'])
+# @permission_classes([IsAuthenticated])
+# def update_default_end_time_bidding_guest_car(request, car_id):
+#     days = int(request.data.get("days",0))
+#     hours = int(request.data.get("hours",0))
+#     minutes = int(request.data.get("minutes",0))
+#     seconds = int(request.data.get("seconds",0))
     
-    # calculating the remaining time
-    remaining_time = car.bidding_end_time - car.bidding_start_time
-    if remaining_time.total_seconds() <= 0:
-        days = hours = minutes = seconds = 0
-    else:
+#     car = get_object_or_404(Guest, id=car_id)
+    
+
+    
+#     now_time = timezone.now()
+#     car.bidding_start_time = now_time
+#     car.bidding_end_time = now_time + timedelta(
+#         days=days,
+#         hours=hours,
+#         minutes=minutes,
+#         seconds=seconds
+#     )
+#     car.save()
+    
+#     # calculating the remaining time
+#     remaining_time = car.bidding_end_time - car.bidding_start_time
+#     if remaining_time.total_seconds() <= 0:
+#         days = hours = minutes = seconds = 0
+#     else:
         
 
-        days = remaining_time.days
-        remaining_seconds = remaining_time.seconds
+#         days = remaining_time.days
+#         remaining_seconds = remaining_time.seconds
         
-        hours = remaining_seconds // 3600
-        minutes = (remaining_seconds % 3600) // 60
-        seconds = remaining_seconds % 60 
-        return Response({
-            "message" : "Live duration updated",
-            "start_time": car.bidding_start_time,
-            "end_time": car.bidding_end_time,
-            "remaining_time" : {
-                "days":days,
-                "hours" : hours,
-                "minutes": minutes,
-                "seconds": seconds
-            }
-        },status=status.HTTP_200_OK)
+#         hours = remaining_seconds // 3600
+#         minutes = (remaining_seconds % 3600) // 60
+#         seconds = remaining_seconds % 60 
+#         return Response({
+#             "message" : "Live duration updated",
+#             "start_time": car.bidding_start_time,
+#             "end_time": car.bidding_end_time,
+#             "remaining_time" : {
+#                 "days":days,
+#                 "hours" : hours,
+#                 "minutes": minutes,
+#                 "seconds": seconds
+#             }
+#         },status=status.HTTP_200_OK)
     
     
     
