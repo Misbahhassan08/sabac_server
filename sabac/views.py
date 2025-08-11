@@ -326,8 +326,7 @@ def update_default_end_time_bidding_seller_car(request, car_id):
     
     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
     
-    if car.status != "bidding":
-        return Response({"message" : "car is not yet Live"},status=status.HTTP_400_BAD_REQUEST)
+
     
     now_time = timezone.now()
     car.bidding_start_time = now_time
@@ -375,8 +374,7 @@ def update_default_end_time_bidding_guest_car(request, car_id):
     
     car = get_object_or_404(Guest, id=car_id)
     
-    if car.status != "bidding":
-        return Response({"message" : "car is not yet Live"},status=status.HTTP_400_BAD_REQUEST)
+
     
     now_time = timezone.now()
     car.bidding_start_time = now_time
