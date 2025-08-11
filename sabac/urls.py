@@ -370,6 +370,6 @@ urlpatterns = [
     # web apis
     # path("add_car_details_web/",add_car_details_web, name="add_car_details_web"), #from web car detaail add
     # path("inspector_web_appointments/",inspector_web_appointments, name="inspector_web_appointments"),
-
+# https://sabac-server-382170497486.us-central1.run.app/ 
 
 ]

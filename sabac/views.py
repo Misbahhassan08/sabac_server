@@ -317,43 +317,50 @@ def is_authentecated(request):
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
 
 # update the defualt bidding time seller car
+
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_seller_car(request, car_id):
-    # Get car
     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
 
-    # Get posted values
     days = int(request.data.get("days", 0))
     hours = int(request.data.get("hours", 0))
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
 
-    # Set start and end time
-    start_time_utc = timezone.now()
-    end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    pk_timezone = pytz.timezone("Asia/Karachi")
 
-    car.bidding_start_time = start_time_utc
-    car.bidding_end_time = end_time_utc
+    start_time_local_aware = timezone.localtime(timezone.now(), pk_timezone)
+
+
+    start_time_local_naive = start_time_local_aware.replace(tzinfo=None)
+
+    end_time_local_naive = start_time_local_naive + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+    car.bidding_start_time = start_time_local_naive
+    car.bidding_end_time = end_time_local_naive
     car.save()
 
-    # Convert to local timezone
-    pk_timezone = pytz.timezone("Asia/Karachi")
-    start_time_local = start_time_utc.astimezone(pk_timezone)
-    end_time_local = end_time_utc.astimezone(pk_timezone)
+    start_time_for_response = pk_timezone.localize(car.bidding_start_time)
+    end_time_for_response = pk_timezone.localize(car.bidding_end_time)
 
-    # Calculate remaining time
-    remaining = end_time_local - timezone.now().astimezone(pk_timezone)
-    remaining_days = remaining.days
-    remaining_seconds = remaining.seconds
-    remaining_hours = remaining_seconds // 3600
-    remaining_minutes = (remaining_seconds % 3600) // 60
-    remaining_seconds = remaining_seconds % 60
+
+    now_pk = timezone.localtime(timezone.now(), pk_timezone)
+    remaining = end_time_for_response - now_pk
+
+    if remaining.total_seconds() <= 0:
+        remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+    else:
+        remaining_days = remaining.days
+        remaining_seconds_total = remaining.seconds
+        remaining_hours = remaining_seconds_total // 3600
+        remaining_minutes = (remaining_seconds_total % 3600) // 60
+        remaining_seconds = remaining_seconds_total % 60
 
     return Response({
         "message": "Live duration updated",
-        "start_time": start_time_local.strftime("%Y-%m-%d %H:%M:%S"),
-        "end_time": end_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "start_time": start_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),  
+        "end_time": end_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),   
         "remaining_time": {
             "days": remaining_days,
             "hours": remaining_hours,
@@ -361,45 +368,53 @@ def update_default_end_time_bidding_seller_car(request, car_id):
             "seconds": remaining_seconds
         }
     })
-
+    
+    
+    
 # update the defualt bidding time guest car
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_guest_car(request, car_id):
-    # Get car
     car = get_object_or_404(Guest, id=car_id)
 
-    # Get posted values
     days = int(request.data.get("days", 0))
     hours = int(request.data.get("hours", 0))
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
 
-    # Set start and end time
-    start_time_utc = timezone.now()
-    end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    pk_timezone = pytz.timezone("Asia/Karachi")
 
-    car.bidding_start_time = start_time_utc
-    car.bidding_end_time = end_time_utc
+    start_time_local_aware = timezone.localtime(timezone.now(), pk_timezone)
+
+
+    start_time_local_naive = start_time_local_aware.replace(tzinfo=None)
+
+    end_time_local_naive = start_time_local_naive + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+    car.bidding_start_time = start_time_local_naive
+    car.bidding_end_time = end_time_local_naive
     car.save()
 
-    # Convert to local timezone
-    pk_timezone = pytz.timezone("Asia/Karachi")
-    start_time_local = start_time_utc.astimezone(pk_timezone)
-    end_time_local = end_time_utc.astimezone(pk_timezone)
+    start_time_for_response = pk_timezone.localize(car.bidding_start_time)
+    end_time_for_response = pk_timezone.localize(car.bidding_end_time)
 
-    # Calculate remaining time
-    remaining = end_time_local - timezone.now().astimezone(pk_timezone)
-    remaining_days = remaining.days
-    remaining_seconds = remaining.seconds
-    remaining_hours = remaining_seconds // 3600
-    remaining_minutes = (remaining_seconds % 3600) // 60
-    remaining_seconds = remaining_seconds % 60
+
+    now_pk = timezone.localtime(timezone.now(), pk_timezone)
+    remaining = end_time_for_response - now_pk
+
+    if remaining.total_seconds() <= 0:
+        remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+    else:
+        remaining_days = remaining.days
+        remaining_seconds_total = remaining.seconds
+        remaining_hours = remaining_seconds_total // 3600
+        remaining_minutes = (remaining_seconds_total % 3600) // 60
+        remaining_seconds = remaining_seconds_total % 60
 
     return Response({
         "message": "Live duration updated",
-        "start_time": start_time_local.strftime("%Y-%m-%d %H:%M:%S"),
-        "end_time": end_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "start_time": start_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),  
+        "end_time": end_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),   
         "remaining_time": {
             "days": remaining_days,
             "hours": remaining_hours,
