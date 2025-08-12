@@ -1,9 +1,11 @@
 import base64
+from time import timezone
 import uuid
 from datetime import datetime
 
 from django.core.files.base import ContentFile
 from rest_framework import serializers
+import pytz
 
 from .models import (
     AdditionalDetails,
@@ -251,11 +253,27 @@ class InspectionReportSerializer(serializers.ModelSerializer):
     
     saler_car = SalerCarDetailsSerializer(read_only=True)
     guest_car = GuestSerializer(read_only=True)
-    
+
+    bidding_start_time = serializers.SerializerMethodField()
+    bidding_end_time = serializers.SerializerMethodField()
+
     class Meta:
         model = InspectionReport
         fields = "__all__"
 
+    def get_bidding_start_time(self, obj):
+        if obj.saler_car and obj.saler_car.bidding_start_time:
+            return obj.saler_car.bidding_start_time.astimezone(
+                pytz.timezone("Asia/Karachi")
+            ).strftime("%Y-%m-%d %H:%M:%S")
+        return None
+
+    def get_bidding_end_time(self, obj):
+        if obj.saler_car and obj.saler_car.bidding_end_time:
+            return obj.saler_car.bidding_end_time.astimezone(
+                pytz.timezone("Asia/Karachi")
+            ).strftime("%Y-%m-%d %H:%M:%S")
+        return None
 
 # Bidding model serializer
 class BiddingSerializer(serializers.ModelSerializer):
