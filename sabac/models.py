@@ -385,6 +385,19 @@ class Bidding(models.Model):
 
     def __str__(self):
         return f"Dealer :{self.dealer.username}"
+    
+    def save(self , *args , **kwargs):
+        super().save(*args , **kwargs)
+        # for seller
+        if self.saler_car:
+            self.saler_car.min_bid_amount = self.bid_amount
+            self.saler_car.save(update_fields=['min_bid_amount'])
+            
+            #for guest 
+        if self.guest_car:
+            self.guest_car.min_bid_amount = self.bid_amount
+            self.guest_car.save(update_fields=['min_bid_amount'])
+            
 
 
 
