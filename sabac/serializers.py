@@ -1,11 +1,11 @@
 import base64
-from time import timezone
 import uuid
 from datetime import datetime
+from time import timezone
 
+import pytz
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-import pytz
 
 from .models import (
     AdditionalDetails,
@@ -254,8 +254,8 @@ class InspectionReportSerializer(serializers.ModelSerializer):
     saler_car = SalerCarDetailsSerializer(read_only=True)
     guest_car = GuestSerializer(read_only=True)
 
-    bidding_start_time = serializers.SerializerMethodField()
-    bidding_end_time = serializers.SerializerMethodField()
+    # bidding_start_time = serializers.SerializerMethodField()
+    # bidding_end_time = serializers.SerializerMethodField()
 
     class Meta:
         model = InspectionReport
