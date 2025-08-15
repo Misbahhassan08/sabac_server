@@ -323,31 +323,32 @@ def is_authentecated(request):
 def update_default_end_time_bidding_seller_car(request, car_id):
     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
 
+    # Get duration from request
     days = int(request.data.get("days", 0))
     hours = int(request.data.get("hours", 0))
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
 
+    # Timezone for response
     pk_timezone = pytz.timezone("Asia/Karachi")
 
-    start_time_local_aware = timezone.localtime(timezone.now(), pk_timezone)
+    # Current UTC time
+    start_time_utc = timezone.now()
+    end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
-
-    start_time_local_naive = start_time_local_aware.replace(tzinfo=None)
-
-    end_time_local_naive = start_time_local_naive + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-
-    car.bidding_start_time = start_time_local_naive
-    car.bidding_end_time = end_time_local_naive
+    # Save UTC times in DB
+    car.bidding_start_time = start_time_utc
+    car.bidding_end_time = end_time_utc
+    car.status = "bidding"
     car.save()
 
-    start_time_for_response = pk_timezone.localize(car.bidding_start_time)
-    end_time_for_response = pk_timezone.localize(car.bidding_end_time)
+    # Convert to PK timezone for response
+    start_time_local = start_time_utc.astimezone(pk_timezone)
+    end_time_local = end_time_utc.astimezone(pk_timezone)
+    now_pk = timezone.now().astimezone(pk_timezone)
 
-
-    now_pk = timezone.localtime(timezone.now(), pk_timezone)
-    remaining = end_time_for_response - now_pk
-
+    # Calculate remaining time safely
+    remaining = end_time_local - now_pk
     if remaining.total_seconds() <= 0:
         remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
     else:
@@ -359,8 +360,8 @@ def update_default_end_time_bidding_seller_car(request, car_id):
 
     return Response({
         "message": "Live duration updated",
-        "start_time": start_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),  
-        "end_time": end_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),   
+        "start_time": start_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end_time_local.strftime("%Y-%m-%d %H:%M:%S"),
         "remaining_time": {
             "days": remaining_days,
             "hours": remaining_hours,
@@ -368,6 +369,58 @@ def update_default_end_time_bidding_seller_car(request, car_id):
             "seconds": remaining_seconds
         }
     })
+
+
+# @api_view(["PUT"])
+# @permission_classes([IsAuthenticated])
+# def update_default_end_time_bidding_seller_car(request, car_id):
+#     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
+
+#     days = int(request.data.get("days", 0))
+#     hours = int(request.data.get("hours", 0))
+#     minutes = int(request.data.get("minutes", 0))
+#     seconds = int(request.data.get("seconds", 0))
+
+#     pk_timezone = pytz.timezone("Asia/Karachi")
+
+#     start_time_local_aware = timezone.localtime(timezone.now(), pk_timezone)
+
+
+#     start_time_local_naive = start_time_local_aware.replace(tzinfo=None)
+
+#     end_time_local_naive = start_time_local_naive + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+#     car.bidding_start_time = start_time_local_naive
+#     car.bidding_end_time = end_time_local_naive
+#     car.save()
+
+#     start_time_for_response = pk_timezone.localize(car.bidding_start_time)
+#     end_time_for_response = pk_timezone.localize(car.bidding_end_time)
+
+
+#     now_pk = timezone.localtime(timezone.now(), pk_timezone)
+#     remaining = end_time_for_response - now_pk
+
+#     if remaining.total_seconds() <= 0:
+#         remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+#     else:
+#         remaining_days = remaining.days
+#         remaining_seconds_total = remaining.seconds
+#         remaining_hours = remaining_seconds_total // 3600
+#         remaining_minutes = (remaining_seconds_total % 3600) // 60
+#         remaining_seconds = remaining_seconds_total % 60
+
+#     return Response({
+#         "message": "Live duration updated",
+#         "start_time": start_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),  
+#         "end_time": end_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),   
+#         "remaining_time": {
+#             "days": remaining_days,
+#             "hours": remaining_hours,
+#             "minutes": remaining_minutes,
+#             "seconds": remaining_seconds
+#         }
+#     })
     
     
     
@@ -377,31 +430,32 @@ def update_default_end_time_bidding_seller_car(request, car_id):
 def update_default_end_time_bidding_guest_car(request, car_id):
     car = get_object_or_404(Guest, id=car_id)
 
+    # Get duration from request
     days = int(request.data.get("days", 0))
     hours = int(request.data.get("hours", 0))
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
 
+    # Timezone for response
     pk_timezone = pytz.timezone("Asia/Karachi")
 
-    start_time_local_aware = timezone.localtime(timezone.now(), pk_timezone)
+    # Current UTC time
+    start_time_utc = timezone.now()
+    end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
-
-    start_time_local_naive = start_time_local_aware.replace(tzinfo=None)
-
-    end_time_local_naive = start_time_local_naive + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-
-    car.bidding_start_time = start_time_local_naive
-    car.bidding_end_time = end_time_local_naive
+    # Save UTC times in DB
+    car.bidding_start_time = start_time_utc
+    car.bidding_end_time = end_time_utc
+    car.status = "bidding"
     car.save()
 
-    start_time_for_response = pk_timezone.localize(car.bidding_start_time)
-    end_time_for_response = pk_timezone.localize(car.bidding_end_time)
+    # Convert to PK timezone for response
+    start_time_local = start_time_utc.astimezone(pk_timezone)
+    end_time_local = end_time_utc.astimezone(pk_timezone)
+    now_pk = timezone.now().astimezone(pk_timezone)
 
-
-    now_pk = timezone.localtime(timezone.now(), pk_timezone)
-    remaining = end_time_for_response - now_pk
-
+    # Calculate remaining time safely
+    remaining = end_time_local - now_pk
     if remaining.total_seconds() <= 0:
         remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
     else:
@@ -413,8 +467,8 @@ def update_default_end_time_bidding_guest_car(request, car_id):
 
     return Response({
         "message": "Live duration updated",
-        "start_time": start_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),  
-        "end_time": end_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),   
+        "start_time": start_time_local.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end_time_local.strftime("%Y-%m-%d %H:%M:%S"),
         "remaining_time": {
             "days": remaining_days,
             "hours": remaining_hours,
@@ -4158,20 +4212,65 @@ def get_bidding_cars(request):
     
     
     
-# expired cars status for dealer and admin
+# # expired cars status for dealer and admin
+# @api_view(["GET"])
+# @permission_classes([IsAuthenticated])
+# def get_expired_cars(request):
+#     user = request.user
+
+ 
+#     seller_cars = saler_car_details.objects.filter(status="expired")
+#     guest_cars = Guest.objects.filter(status="expired")
+
+#     if not seller_cars.exists() and not guest_cars.exists():
+#         return Response(
+#             {"error": "No cars found in Expired status"},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+#     seller_serializer = SalerCarDetailsSerializer(seller_cars, many=True)
+#     guest_serializer = GuestSerializer(guest_cars, many=True)
+
+#     return Response(
+#         {
+#             "message": "Cars fetched successfully",
+#             "cars": {
+#                 "seller_cars": seller_serializer.data,
+#                 "guest_cars": guest_serializer.data
+#             }
+#         },
+#         status=status.HTTP_200_OK,
+#     )
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_expired_cars(request):
     user = request.user
 
- 
+    now = timezone.now()
+
+    # Auto-update seller cars whose bidding ended
+    saler_car_details.objects.filter(
+        status="bidding",
+        bidding_end_time__lt=now,
+        is_sold=False
+    ).update(status="expired")
+
+    # Auto-update guest cars whose bidding ended
+    Guest.objects.filter(
+        status="bidding",
+        bidding_end_time__lt=now,
+        is_sold=False
+    ).update(status="expired")
+
+    # Fetch all expired cars
     seller_cars = saler_car_details.objects.filter(status="expired")
     guest_cars = Guest.objects.filter(status="expired")
 
     if not seller_cars.exists() and not guest_cars.exists():
         return Response(
             {"error": "No cars found in Expired status"},
-            status=status.HTTP_404_NOT_FOUND,
+            status=404,
         )
 
     seller_serializer = SalerCarDetailsSerializer(seller_cars, many=True)
@@ -4185,10 +4284,8 @@ def get_expired_cars(request):
                 "guest_cars": guest_serializer.data
             }
         },
-        status=status.HTTP_200_OK,
+        status=200,
     )
-
-
 
 # get cars with status inspection for dealer and admin (upcoming)
 @api_view(["GET"])
