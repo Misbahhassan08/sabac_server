@@ -118,7 +118,7 @@ class saler_car_details(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        # now_time = timezone.now()
+        now_time = timezone.now()
 
         # if self.pk:
         #     existing_car = saler_car_details.objects.get(pk=self.pk)

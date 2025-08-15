@@ -4155,6 +4155,39 @@ def get_bidding_cars(request):
         {"message": "Cars fetched successfully", "cars": serializer.data},
         status=status.HTTP_200_OK,
     )
+    
+    
+    
+# expired cars status for dealer and admin
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_expired_cars(request):
+    user = request.user
+
+ 
+    seller_cars = saler_car_details.objects.filter(status="expired")
+    guest_cars = Guest.objects.filter(status="expired")
+
+    if not seller_cars.exists() and not guest_cars.exists():
+        return Response(
+            {"error": "No cars found in Expired status"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    seller_serializer = SalerCarDetailsSerializer(seller_cars, many=True)
+    guest_serializer = GuestSerializer(guest_cars, many=True)
+
+    return Response(
+        {
+            "message": "Cars fetched successfully",
+            "cars": {
+                "seller_cars": seller_serializer.data,
+                "guest_cars": guest_serializer.data
+            }
+        },
+        status=status.HTTP_200_OK,
+    )
+
 
 
 # get cars with status inspection for dealer and admin (upcoming)
