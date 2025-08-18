@@ -316,8 +316,44 @@ def is_authentecated(request):
 
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
 
-# update the defualt bidding time seller car
+# Moved Car to inventory
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def moved_to_inventory(request, car_id):
+    car = get_object_or_404(saler_car_details , saler_car_id=car_id)
+    
+    if car.status != "expired":
+        return Response({"message" : "only expired cars moved to inventory"},status=status.HTTP_400_BAD_REQUEST)
+    
+    car.status = 'in_inventory'
+    car.save()
+    
+    serializer = SalerCarDetailsSerializer(car)
+    return Response({
+        "message" : "move to inventory successfully",
+        "car": serializer.data
+    },status=status.HTTP_200_OK)
+    
+# Moved Car to inventory guest
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def moved_to_inventory_guest_car(request, car_id):
+    car = get_object_or_404(Guest, id=car_id)
+    
+    if car.status != "expired":
+        return Response({"message" : "only expired cars moved to inventory"},status=status.HTTP_400_BAD_REQUEST)
+    
+    car.status = 'in_inventory'
+    car.save()
+    
+    serializer = GuestSerializer(car)
+    return Response({
+        "message" : "move to inventory successfully",
+        "car": serializer.data
+    },status=status.HTTP_200_OK)
+    
 
+# update the defualt bidding time seller car
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_seller_car(request, car_id):

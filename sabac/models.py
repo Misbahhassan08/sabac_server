@@ -54,6 +54,7 @@ class saler_car_details(models.Model):
         ("rejected", "Rejected"),
         ("bidding", "In Bidding"),
         ("expired", "Expired"),
+        ("in_inventory" , "In Inventory"),
         ("sold", "Sold"),
     ]
 
@@ -148,6 +149,7 @@ class Guest(models.Model):
         ("rejected", "Rejected"),
         ("bidding", "In Bidding"),
         ("expired", "Expired"),
+        ("in_inventory" , "In Inventory"),
         ("sold", "Sold"),
     ]   
     name = models.CharField(max_length=100)
