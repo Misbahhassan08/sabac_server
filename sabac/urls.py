@@ -33,6 +33,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     get_bidding_cars,
     get_bidding_cars_by_guest,
     get_car_details,
+    get_car_for_inventory,
     get_cars_count,
     get_cars_data,
     get_cars_for_approval,
@@ -361,7 +362,8 @@ urlpatterns = [
     path("update_default_end_time_bidding_guest_car/<int:car_id>",update_default_end_time_bidding_guest_car,name="update_default_end_time_bidding_guest_car"),
     path("get_expired_cars/",get_expired_cars,name="get_expired_cars"),
     path("moved_to_inventory/<int:car_id>",moved_to_inventory,name="moved_to_inventory"),
-    path("moved_to_inventory_guest_car/<int:car_id>",moved_to_inventory_guest_car,name="moved_to_inventory_guest_car")
+    path("moved_to_inventory_guest_car/<int:car_id>",moved_to_inventory_guest_car,name="moved_to_inventory_guest_car"),
+    path("get_car_for_inventory",get_car_for_inventory,name="get_car_for_inventory")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     

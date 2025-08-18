@@ -406,6 +406,36 @@ def update_default_end_time_bidding_seller_car(request, car_id):
         }
     })
 
+# GET car in_inventory status seller & guest
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_car_for_inventory(request):
+    try:
+        seller_cars = saler_car_details.objects.filter(status="in_inventory")
+        guest_cars = Guest.objects.filter(status="in_inventory")
+        
+        if not seller_cars.exists() and not guest_cars.exists():
+            return Response({
+                "success" : False,
+                "message" : "No cars available for inventory",
+                "data" : {"seller_cars":[], "guest_cars":[] }
+                },status=status.HTTP_404_NOT_FOUND)
+        
+        seller_serializer = SalerCarDetailsSerializer(seller_cars , many=True)
+        guest_serializer = GuestSerializer(guest_cars,many=True)
+        
+        return Response({
+            "success" : True,
+            "message" : "car fetched successfully",
+            "seller_car" : seller_serializer.data,
+            "guest_cars": guest_serializer.data
+        },status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            "success" : False,
+            "message" : "An unexpected error occure while fetching Cars",
+        },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # @api_view(["PUT"])
 # @permission_classes([IsAuthenticated])
