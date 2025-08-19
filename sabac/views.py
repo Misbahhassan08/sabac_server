@@ -1,9 +1,7 @@
 import json
 import logging
 import os
-from collections import defaultdict
 from datetime import datetime, timedelta
-from operator import itemgetter
 from time import timezone
 from venv import logger
 
@@ -316,7 +314,7 @@ def is_authentecated(request):
 
 # ////////////////////////////////////////ADMIN APIs///////////////////////////////////////////////////////////
 
-# Moved Car to inventory
+# ////Moved Car to inventory/////
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def moved_to_inventory(request, car_id):
@@ -334,7 +332,9 @@ def moved_to_inventory(request, car_id):
         "car": serializer.data
     },status=status.HTTP_200_OK)
     
-# Moved Car to inventory guest
+    
+    
+# ////////Moved Car to inventory guest//////////
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def moved_to_inventory_guest_car(request, car_id):
@@ -352,38 +352,36 @@ def moved_to_inventory_guest_car(request, car_id):
         "car": serializer.data
     },status=status.HTTP_200_OK)
     
+    
+    
 
-# update the defualt bidding time seller car
+# //////////////update the defualt bidding time seller car///////////
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_seller_car(request, car_id):
     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
-
-    # Get duration from request
+    
+    # duration
     days = int(request.data.get("days", 0))
     hours = int(request.data.get("hours", 0))
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
-
-    # Timezone for response
+    
+    # pak time zone
     pk_timezone = pytz.timezone("Asia/Karachi")
 
-    # Current UTC time
     start_time_utc = timezone.now()
     end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
-    # Save UTC times in DB
     car.bidding_start_time = start_time_utc
     car.bidding_end_time = end_time_utc
     car.status = "bidding"
     car.save()
 
-    # Convert to PK timezone for response
     start_time_local = start_time_utc.astimezone(pk_timezone)
     end_time_local = end_time_utc.astimezone(pk_timezone)
     now_pk = timezone.now().astimezone(pk_timezone)
 
-    # Calculate remaining time safely
     remaining = end_time_local - now_pk
     if remaining.total_seconds() <= 0:
         remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
@@ -406,12 +404,14 @@ def update_default_end_time_bidding_seller_car(request, car_id):
         }
     })
 
-# GET car in_inventory status seller & guest
+# /////////GET car in_inventory status seller & guest////////
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_car_for_inventory(request):
     try:
+        # for seller cars
         seller_cars = saler_car_details.objects.filter(status="in_inventory")
+        # for guest cars
         guest_cars = Guest.objects.filter(status="in_inventory")
         
         if not seller_cars.exists() and not guest_cars.exists():
@@ -437,90 +437,38 @@ def get_car_for_inventory(request):
             "message" : "An unexpected error occure while fetching Cars",
         },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# @api_view(["PUT"])
-# @permission_classes([IsAuthenticated])
-# def update_default_end_time_bidding_seller_car(request, car_id):
-#     car = get_object_or_404(saler_car_details, saler_car_id=car_id)
-
-#     days = int(request.data.get("days", 0))
-#     hours = int(request.data.get("hours", 0))
-#     minutes = int(request.data.get("minutes", 0))
-#     seconds = int(request.data.get("seconds", 0))
-
-#     pk_timezone = pytz.timezone("Asia/Karachi")
-
-#     start_time_local_aware = timezone.localtime(timezone.now(), pk_timezone)
 
 
-#     start_time_local_naive = start_time_local_aware.replace(tzinfo=None)
-
-#     end_time_local_naive = start_time_local_naive + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
-
-#     car.bidding_start_time = start_time_local_naive
-#     car.bidding_end_time = end_time_local_naive
-#     car.save()
-
-#     start_time_for_response = pk_timezone.localize(car.bidding_start_time)
-#     end_time_for_response = pk_timezone.localize(car.bidding_end_time)
-
-
-#     now_pk = timezone.localtime(timezone.now(), pk_timezone)
-#     remaining = end_time_for_response - now_pk
-
-#     if remaining.total_seconds() <= 0:
-#         remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
-#     else:
-#         remaining_days = remaining.days
-#         remaining_seconds_total = remaining.seconds
-#         remaining_hours = remaining_seconds_total // 3600
-#         remaining_minutes = (remaining_seconds_total % 3600) // 60
-#         remaining_seconds = remaining_seconds_total % 60
-
-#     return Response({
-#         "message": "Live duration updated",
-#         "start_time": start_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),  
-#         "end_time": end_time_for_response.strftime("%Y-%m-%d %H:%M:%S"),   
-#         "remaining_time": {
-#             "days": remaining_days,
-#             "hours": remaining_hours,
-#             "minutes": remaining_minutes,
-#             "seconds": remaining_seconds
-#         }
-#     })
     
-    
-    
-# update the defualt bidding time guest car
+# ///////////update the defualt bidding time guest car////////
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_default_end_time_bidding_guest_car(request, car_id):
     car = get_object_or_404(Guest, id=car_id)
 
-    # Get duration from request
+    # Get duration
     days = int(request.data.get("days", 0))
     hours = int(request.data.get("hours", 0))
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
 
-    # Timezone for response
+    # pak Timezone 
     pk_timezone = pytz.timezone("Asia/Karachi")
 
-    # Current UTC time
+# current time
     start_time_utc = timezone.now()
     end_time_utc = start_time_utc + timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
-    # Save UTC times in DB
+    # Save time to DB
     car.bidding_start_time = start_time_utc
     car.bidding_end_time = end_time_utc
     car.status = "bidding"
     car.save()
 
-    # Convert to PK timezone for response
     start_time_local = start_time_utc.astimezone(pk_timezone)
     end_time_local = end_time_utc.astimezone(pk_timezone)
     now_pk = timezone.now().astimezone(pk_timezone)
 
-    # Calculate remaining time safely
     remaining = end_time_local - now_pk
     if remaining.total_seconds() <= 0:
         remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
@@ -544,64 +492,7 @@ def update_default_end_time_bidding_guest_car(request, car_id):
     })
 
 
-
-# update the defualt bidding time guest
-# @api_view(['PUT'])
-# @permission_classes([IsAuthenticated])
-# def update_default_end_time_bidding_guest_car(request, car_id):
-#     days = int(request.data.get("days",0))
-#     hours = int(request.data.get("hours",0))
-#     minutes = int(request.data.get("minutes",0))
-#     seconds = int(request.data.get("seconds",0))
-    
-#     car = get_object_or_404(Guest, id=car_id)
-    
-
-    
-#     now_time = timezone.now()
-#     car.bidding_start_time = now_time
-#     car.bidding_end_time = now_time + timedelta(
-#         days=days,
-#         hours=hours,
-#         minutes=minutes,
-#         seconds=seconds
-#     )
-#     car.save()
-    
-#     # calculating the remaining time
-#     remaining_time = car.bidding_end_time - car.bidding_start_time
-#     if remaining_time.total_seconds() <= 0:
-#         days = hours = minutes = seconds = 0
-#     else:
-        
-
-#         days = remaining_time.days
-#         remaining_seconds = remaining_time.seconds
-        
-#         hours = remaining_seconds // 3600
-#         minutes = (remaining_seconds % 3600) // 60
-#         seconds = remaining_seconds % 60 
-#         return Response({
-#             "message" : "Live duration updated",
-#             "start_time": car.bidding_start_time,
-#             "end_time": car.bidding_end_time,
-#             "remaining_time" : {
-#                 "days":days,
-#                 "hours" : hours,
-#                 "minutes": minutes,
-#                 "seconds": seconds
-#             }
-#         },status=status.HTTP_200_OK)
-    
-    
-    
-    
-    
-
-
-
-
-# asking price update of seller car
+# //////////asking price update of seller car/////////////
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_seller_car_asking_price(request , car_id):
@@ -628,7 +519,7 @@ def update_seller_car_asking_price(request , car_id):
                      },status=status.HTTP_200_OK)
     
     
-# asking price update of guest car
+# ////////////asking price update of guest car/////////////
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_guest_car_asking_price(request , car_id):
@@ -656,7 +547,7 @@ def update_guest_car_asking_price(request , car_id):
 
 
 
-# cars count with status bidding
+# /////////cars count with status bidding////not used
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_cars_count(request):
@@ -687,7 +578,7 @@ def get_cars_count(request):
         )
 
 
-# get highest bid
+# ///////////get highest bid///////not used
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_highest_bid(request):
@@ -711,7 +602,7 @@ def get_highest_bid(request):
         )
 
 
-# get max bid of specefic car
+# ////////get max bid of specefic car/////////
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_max_bid(request):
@@ -751,7 +642,9 @@ def get_max_bid(request):
         "max_bid":max_bid
     },status=status.HTTP_200_OK)
 
-# get list of cars accepted or rejected
+
+
+# /////////get list of cars accepted or rejected////////
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_reviewd_inspection(request):
@@ -772,7 +665,7 @@ def get_reviewd_inspection(request):
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# car list with status awaiting approval
+# ///////////car list with status awaiting approval//////////
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_cars_for_approval(request):
@@ -799,7 +692,7 @@ def get_cars_for_approval(request):
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ADMIN ACCEPT THE CAR INSPECTION REPORT OF SELLER
+# //////////ADMIN ACCEPT THE CAR INSPECTION REPORT OF SELLER///////
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def approve_inspection(request, report_id):
@@ -841,7 +734,7 @@ def approve_inspection(request, report_id):
     )
     
     
-# set minimum bid for seller car
+# ///////////set minimum bid for seller car///////
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def set_up_minimum_bid_seller_car(request, car_id):
@@ -871,11 +764,8 @@ def set_up_minimum_bid_seller_car(request, car_id):
     },status=status.HTTP_200_OK)
     
     
-    
 
-
-
-# ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER
+# ////////////ADMIN REJECT THE CAR INSPECTION REPORT OF SELLER/////////////
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reject_inspection(request, report_id):
@@ -905,7 +795,7 @@ def reject_inspection(request, report_id):
     )
 
 
-# get the list of all cars by sellers TOTAL CARS IN DATABSE NOT USED
+# //////////////get the list of all cars by sellers TOTAL CARS IN DATABSE NOT USED/////////////
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_cars_list(request):
@@ -1346,56 +1236,7 @@ def carsStats(request):
     )
     return Response(data, status=status.HTTP_200_OK)
 
-
-# ACCEPT BID
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def accept_bid(request, bid_id):
-#     user = request.user
-#     logger.info(f"User {user.username} is attempting to accept bid {bid_id}")
-
-#     if user.role != "admin":
-#         return Response(
-#             {"message": "Only admins can accept bids"},
-#             status=status.HTTP_403_FORBIDDEN,
-#         )
-
-#     try:
-#         bid = Bidding.objects.get(id=bid_id)
-#     except Bidding.DoesNotExist:
-#         logger.error(f"Bid with id {bid_id} not found.")
-#         return Response({"message": "Bid not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#     if bid.status != "pending":
-#         return Response(
-#             {"message": "Bid already processed"}, status=status.HTTP_400_BAD_REQUEST
-#         )
-
-#     bid.is_accepted = True
-#     bid.status = "accepted"
-#     bid.save()
-
-#     car = bid.saler_car
-#     car.is_sold = True
-#     car.winner_dealer = bid.dealer
-#     car.save()
-
-#     Bidding.objects.filter(saler_car=car).exclude(id=bid_id).update(status="rejected")
-
-#     Notification.objects.create(
-#         recipient=bid.dealer,
-#         message=f"Your bid of {bid.bid_amount} on {car.company} {car.car_name} {car.year} has been accepted.",
-#         saler_car=car,
-#         bid=bid,
-#         category="bid_accepted",
-#     )
-
-#     return Response(
-#         {"message": "Bid accepted and car marked as sold"},
-#         status=status.HTTP_200_OK,
-#     )
-
-
+# /////////////admin accept bid by dealer 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def accept_bid(request, bid_id):
@@ -1458,45 +1299,7 @@ def accept_bid(request, bid_id):
     )
 
 
-# REJECT BID
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def reject_bid(request, bid_id):
-#     user = request.user
-#     logger.info(f"User {user.username} is attempting to reject bid {bid_id}")
-
-#     if user.role != "admin":
-#         return Response(
-#             {"message": "Only admins can reject bids"},
-#             status=status.HTTP_403_FORBIDDEN,
-#         )
-
-#     bid = get_object_or_404(Bidding, id=bid_id)
-
-#     if bid.status != "pending":
-#         logger.info(f"Bid {bid_id} has already been processed with status {bid.status}")
-#         return Response(
-#             {"message": "Bid has already been processed"},
-#             status=status.HTTP_400_BAD_REQUEST,
-#         )
-
-#     bid.is_accepted = False
-#     bid.status = "rejected"
-#     bid.save()
-
-#     car = bid.saler_car
-
-#     Notification.objects.create(
-#         recipient=bid.dealer,
-#         message=f"Your bid of {bid.bid_amount} on {car.company} {car.car_name} {car.year} has been rejected.",
-#         saler_car=car,
-#         bid=bid,
-#         category="bid_rejected",
-#     )
-
-
-#     logger.info(f"Bid {bid_id} rejected successfully by admin {user.username}")
-#     return Response({"message": "Bid rejected"}, status=status.HTTP_200_OK)
+# //////admin reject bid//////////////
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reject_bid(request, bid_id):
@@ -1582,7 +1385,7 @@ def bid_notification_for_seller(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-
+# mark the bid notification as read
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def mark_bid_notifications_as_read(request):
@@ -1778,7 +1581,6 @@ def set_up_live_duration(request):
 
 
 
-
 # bidding time setup set car Live duration for guest
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
@@ -1848,66 +1650,105 @@ def set_up_live_duration_guest_car(request):
     },status=status.HTTP_200_OK)
     
         
-        
+# dealer register
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def dealer_register(request):
+    if request.user.role != "admin":
+        return Response(
+            {"message": "Only admin can register a dealer."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    data = request.data
+
+    try:
+        user = User.objects.create_user(
+            username=data.get("username"),
+            first_name=data.get("first_name"),
+            last_name=data.get("last_name"),
+            email=data.get("email"),
+            password=data.get("password"),
+            phone_number=data.get("phone_number"),
+            adress=data.get("adress"),
+            role="dealer",
+        )
+
+        # Store plain password
+        user.plain_password = data.get("password")
+        user.save()
+
+        return Response(
+            {
+                "message": "Dealer created successfully",
+                "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "username": user.username,
+                "email": user.email,
+                "phone_number": user.phone_number,
+                "role": user.role,
+                "plain_password": user.plain_password,  # optional in response
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    except Exception as e:
+        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# update dealer
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def dealer_update(request, dealer_id):
+    if request.user.role != "admin":
+        return Response(
+            {"message": "Only admin can update dealer details."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        user = User.objects.get(id=dealer_id, role="dealer")
+    except User.DoesNotExist:
+        return Response(
+            {"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    data = request.data
+
+    user.username = data.get("username", user.username)
+    user.first_name = data.get("first_name", user.first_name)
+    user.last_name = data.get("last_name", user.last_name)
+    user.email = data.get("email", user.email)
+    user.phone_number = data.get("phone_number", user.phone_number)
+    user.adress = data.get("adress", user.adress)
+
+    # 🔁 Update using plain_password if sent
+    if data.get("plain_password"):
+        user.set_password(data["plain_password"])
+        user.plain_password = data["plain_password"]
+
+    user.save()
+
+    return Response(
+        {
+            "message": "Dealer updated successfully",
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "role": user.role,
+            "plain_password": user.plain_password,  # optional in response
+        },
+        status=status.HTTP_200_OK,
+    )
+
 
 
 
 # /////////////////////////////////////SELLER APIs/////////////////////////////////////////
-
-
-# seller post car detail
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def add_car_details(request):
-#     try:
-#         user = request.user
-#         data = request.data.copy()
-#         data["user"] = user.id
-#         data["added_by"] = "seller"
-
-#         serializer = SalerCarDetailsSerializer(data=data)
-#         if serializer.is_valid():
-#             car_details = serializer.save()
-
-#             saler_phone_number = getattr(user, "phone_number", "N/A")
-
-#             inspection_date = (
-#                 car_details.inspection_date.strftime("%Y-%m-%d")
-#                 if car_details.inspection_date
-#                 else "Not Scheduled"
-#             )
-#             inspection_time = car_details.inspection_time
-
-#             inspectors = User.objects.filter(role="inspector")
-
-#             for inspector in inspectors:
-#                 message = (
-#                     f"New Car: {car_details.car_name} ({car_details.year}) "
-#                     f"Added by: {user.username} (Phone: {saler_phone_number})."
-#                 )
-
-#                 if inspection_date and inspection_time:
-#                     message += f" Inspection Scheduled on {inspection_date} at {inspection_time}."
-#                 else:
-#                     message += " Inspection schedule not set."
-
-#                 Notification.objects.create(
-#                     recipient=inspector,
-#                     message=message,
-#                     category="saler_car_details",
-#                 )
-
-
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     except Exception as e:
-#         return Response(
-#             {"success": False, "message": f"Error adding car details: {str(e)}"},
-#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#         )
-
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -2029,7 +1870,7 @@ def select_slot(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_manual_saler_assigned_slots(request):
-    # Filter only manually added cars that are assigned
+  
     saler_slots = AssignSlot.objects.select_related("car", "inspector").filter(
         car__isnull=False, car__status="assigned", car__is_manual=True
     )
@@ -2325,149 +2166,6 @@ def saler_register(request):
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-# dealer register
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def dealer_register(request):
-    if request.user.role != "admin":
-        return Response(
-            {"message": "Only admin can register a dealer."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    data = request.data
-
-    try:
-        user = User.objects.create_user(
-            username=data.get("username"),
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            email=data.get("email"),
-            password=data.get("password"),
-            phone_number=data.get("phone_number"),
-            adress=data.get("adress"),
-            role="dealer",
-        )
-
-        # Store plain password
-        user.plain_password = data.get("password")
-        user.save()
-
-        return Response(
-            {
-                "message": "Dealer created successfully",
-                "id": user.id,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "username": user.username,
-                "email": user.email,
-                "phone_number": user.phone_number,
-                "role": user.role,
-                "plain_password": user.plain_password,  # optional in response
-            },
-            status=status.HTTP_201_CREATED,
-        )
-
-    except Exception as e:
-        return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# update dealer
-@api_view(["PUT"])
-@permission_classes([IsAuthenticated])
-def dealer_update(request, dealer_id):
-    if request.user.role != "admin":
-        return Response(
-            {"message": "Only admin can update dealer details."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    try:
-        user = User.objects.get(id=dealer_id, role="dealer")
-    except User.DoesNotExist:
-        return Response(
-            {"message": "Dealer not found."}, status=status.HTTP_404_NOT_FOUND
-        )
-
-    data = request.data
-
-    user.username = data.get("username", user.username)
-    user.first_name = data.get("first_name", user.first_name)
-    user.last_name = data.get("last_name", user.last_name)
-    user.email = data.get("email", user.email)
-    user.phone_number = data.get("phone_number", user.phone_number)
-    user.adress = data.get("adress", user.adress)
-
-    # 🔁 Update using plain_password if sent
-    if data.get("plain_password"):
-        user.set_password(data["plain_password"])
-        user.plain_password = data["plain_password"]
-
-    user.save()
-
-    return Response(
-        {
-            "message": "Dealer updated successfully",
-            "id": user.id,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "username": user.username,
-            "email": user.email,
-            "phone_number": user.phone_number,
-            "role": user.role,
-            "plain_password": user.plain_password,  # optional in response
-        },
-        status=status.HTTP_200_OK,
-    )
-
-
-# inspector register
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def inspector_register(request):
-
-#     if request.user.role != "admin":
-#         return Response(
-#             {"message": "Only admin can register a dealer."},
-#             status=status.HTTP_403_FORBIDDEN,
-#         )
-
-#     data = request.data
-
-#     try:
-#         user = User.objects.create_user(
-#             username=data.get("username"),
-#             first_name=data.get("first_name"),
-#             last_name=data.get("last_name"),
-#             email=data.get("email"),
-#             password=data.get("password"),
-#             phone_number=data.get("phone_number"),
-#             adress=data.get("adress"),
-#             role="inspector",
-#         )
-#                 # Manually set plain_password and save again
-#         user.plain_password = password
-#         user.save()
-
-
-#         return Response(
-#             {
-#                 "message": "inspector created successfully",
-#                 "id": user.id,
-#                 "first_name": user.first_name,
-#                 "last_name": user.last_name,
-#                 "username": user.username,
-#                 "email": user.email,
-#                 "phone_number": user.phone_number,
-#                 "role": user.role,
-#                 "plain_password": user.plain_password,
-#             },
-#             status=status.HTTP_201_CREATED,
-#         )
-
-#     except Exception as e:
-#         return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
@@ -2855,111 +2553,6 @@ def get_last_car_details(request):
 
 # ///////////////////////////////INSPECTOR APIs////////////////////////////////
 
-
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def inspector_appointments(request):
-#     user = request.user
-#     if user.role != "inspector":
-#         return Response(
-#             {"message": "Only inspectors can view this data"},
-#             status=status.HTTP_403_FORBIDDEN,
-#         )
-
-#     appointments = saler_car_details.objects.filter(
-#         inspector=user, user__isnull=False, is_manual=False
-#     ).order_by("inspection_date", "inspection_time")
-
-#     if not appointments.exists():
-#         return Response(
-#             {"message": "No valid appointments found for this inspector"},
-#             status=status.HTTP_404_NOT_FOUND,
-#         )
-
-#     serialized_appointments = SalerCarDetailsSerializer(appointments, many=True).data
-
-#     for i, appointment in enumerate(appointments):
-#         serialized_appointments[i]["inspection_date"] = (
-#             appointment.inspection_date.strftime("%Y-%m-%d")
-#         )
-#         serialized_appointments[i]["inspection_time"] = appointment.inspection_time
-
-#     return Response(
-#         {
-#             "message": "Inspector appointments retrieved successfully",
-#             "appointments": serialized_appointments,
-#         },
-#         status=status.HTTP_200_OK,
-#     )
-
-
-# combined api for all type of appointment for inspector
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def combined_appointments(request):
-#     user = request.user
-
-#     if user.role != "inspector":
-#         return Response({"error": "Only inspectors can access this"}, status=403)
-
-#     all_serialized = []
-
-#     # 1. Seller manual appointments (AssignSlot with car)
-#     seller_manual = AssignSlot.objects.select_related("car", "inspector") \
-#         .filter(inspector=user, car__isnull=False) \
-#         .exclude(car__status="pending") \
-#         .filter(car__user__isnull=False)
-#     for slot in seller_manual:
-#         serialized = AssignedSlotSerializer(slot).data
-#         serialized["source"] = "seller_manual"
-#         serialized["created_at"] = slot.created_at.isoformat()
-#         all_serialized.append(serialized)
-
-#     # 2. Guest manual appointments (AssignSlot with guest_car)
-#     guest_manual = AssignSlot.objects.select_related("guest_car", "inspector") \
-#         .filter(inspector=user, guest_car__isnull=False) \
-#         .exclude(guest_car__status="pending")
-#     for slot in guest_manual:
-#         serialized = AssignedSlotSerializer(slot).data
-#         serialized["source"] = "guest_manual"
-#         serialized["created_at"] = slot.created_at.isoformat()
-#         all_serialized.append(serialized)
-
-#     # 3. Guest scheduled appointments (Guest model)
-#     guest_scheduled = Guest.objects.filter(inspector=user, is_manual=False)
-#     for guest in guest_scheduled:
-#         serialized = GuestSerializer(guest).data
-#         serialized["source"] = "guest_scheduled"
-#         serialized["created_at"] = guest.created_at.isoformat()
-#         all_serialized.append(serialized)
-
-#     # 4. Seller scheduled appointments (saler_car_details model)
-#     seller_scheduled = saler_car_details.objects.select_related("user", "inspector") \
-#         .filter(inspector=user, user__isnull=False, is_manual=False)
-#     for car in seller_scheduled:
-#         serialized = SalerCarDetailsSerializer(car).data
-#         serialized["source"] = "seller_scheduled"
-#         serialized["created_at"] = car.created_at.isoformat()
-#         all_serialized.append(serialized)
-
-#     # 5. Sort all by created_at
-#     all_serialized.sort(key=itemgetter("created_at"))
-
-#     # 6. Group by created_at.date()
-#     grouped_by_date = defaultdict(list)
-#     for item in all_serialized:
-#         date_key = item["created_at"][:10]  # 'YYYY-MM-DD'
-#         grouped_by_date[date_key].append(item)
-
-#     return Response({
-#         "appointments_by_date": dict(grouped_by_date)
-#     }, status=200)
-    
-    
-    
-    
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def inspector_appointments(request):
@@ -3200,70 +2793,6 @@ def post_inspection_report(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# update inspection report web
-# @api_view(["PUT"])
-# @permission_classes([IsAuthenticated])
-# def update_inspection_report(request, report_id):
-#     user = request.user
-#     if user.role != "inspector":
-#         return Response(
-#             {"message": "Only inspectors can update inspection reports."},
-#             status=status.HTTP_403_FORBIDDEN,
-#         )
-
-#     try:
-#         report = InspectionReport.objects.get(id=report_id, inspector=user)
-#     except InspectionReport.DoesNotExist:
-#         return Response(
-#             {"message": "Inspection report not found."},
-#             status=status.HTTP_404_NOT_FOUND,
-#         )
-
-#     serializer = InspectionReportSerializer(
-#         instance=report, data=request.data, partial=True
-#     )
-#     if serializer.is_valid():
-#         updated_report = serializer.save()
-
-#         car = report.saler_car  # get car from the report
-
-#         # Notifications
-#         Notification.objects.create(
-#             recipient=car.user,
-#             message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
-#             category="inspection_updated",
-#             saler_car=car,
-#         )
-
-#         dealers = User.objects.filter(role="dealer")
-#         for dealer in dealers:
-#             Notification.objects.create(
-#                 recipient=dealer,
-#                 message=f"The inspection report for car '{car.car_name} ({car.year})' has been updated.",
-#                 category="dealer_inspection_updated",
-#                 saler_car=car,
-#             )
-
-#         admins = User.objects.filter(role="admin")
-#         for admin in admins:
-#             Notification.objects.create(
-#                 recipient=admin,
-#                 message=f"Inspection report updated for '{car.car_name} ({car.year})'.",
-#                 category="admin_inspection_updated",
-#                 saler_car=car,
-#             )
-
-#         return Response(
-#             {
-#                 "message": "Inspection report updated successfully.",
-#                 "report": InspectionReportSerializer(updated_report).data,
-#             },
-#             status=status.HTTP_200_OK,
-#         )
-
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_inspection_report(request, report_id):
@@ -3406,78 +2935,6 @@ def get_manual_entries_for_inspector(request):
     )
 
 
-# INSPECTOR POST INSPECTION REPORT mobile
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def post_inspection_report_mob(request):
-
-#     user = request.user
-#     if user.role != "inspector":
-#         return Response(
-#             {"message": "Only inspectors can submit inspection reports."},
-#             status=status.HTTP_403_FORBIDDEN,
-#         )
-
-#     data = request.data
-#     print("Inspection report data received From mobile app:", data)
-
-#     # Get the saler_car ID from request
-#     saler_car_id = data.get("saler_car")
-#     if not saler_car_id:
-#         return Response(
-#             {"message": "Missing 'saler_car' field in request."},
-#             status=status.HTTP_400_BAD_REQUEST,
-#         )
-
-#     try:
-#         car = saler_car_details.objects.get(saler_car_id=saler_car_id)
-#     except saler_car_details.DoesNotExist:
-#         return Response(
-#             {"message": "Car not found."},
-#             status=status.HTTP_404_NOT_FOUND,
-#         )
-#   # "json_obj"
-#     # Prepare the JSON data in the expected format
-#     json_obj = data.get("json_obj")
-#     mobile_data = {
-#         "bodyParts": json_obj.get("bodyParts"),
-#         # Add other sections from mobile data as needed
-#     }
-
-#     merge_result = merge_json(my_default_json, mobile_data)
-
-#     # Create a copy of the data with the properly formatted json_obj
-#     serializer_data = {
-#         **data,
-#         "json_obj": merge_result
-#     }
-
-#     serializer = InspectionReportSerializer(data=serializer_data)
-#     if serializer.is_valid():
-#         report = serializer.save(inspector=user, saler_car=car)
-
-#         # Notify Seller
-#         Notification.objects.create(
-#             recipient=car.user,
-#             message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-#             category="Your_car_inspected",
-#             saler_car=car,
-#         )
-
-#         # Notify Dealers and Admins (keep your existing code)
-#         # ...
-
-#         return Response(
-#             {
-#                 "message": "Inspection report submitted successfully.",
-#                 "report": InspectionReportSerializer(report).data,
-#             },
-#             status=status.HTTP_201_CREATED,
-#         )
-
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def post_inspection_report_mob(request):
@@ -3539,132 +2996,6 @@ def post_inspection_report_mob(request):
             status=status.HTTP_201_CREATED,
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# UPDATE INSPECTION REPORT
-# @permission_classes([IsAuthenticated])
-# @api_view(["PUT"])
-# def update_inspection_report(request, report_id):
-#     user = request.user
-#     if user.role != "inspector":
-#         return Response(
-#             {"message": "only inspector can update"}, status=status.HTTP_403_FORBIDDEN
-#         )
-
-#     try:
-#         report = InspectionReport.objects.get(id=report_id, inspector=user)
-#         print(f"Report found: {report}")
-#     except InspectionReport.DoesNotExist:
-#         # Debugging line
-#         print(f"Report with ID {report_id} not found for inspector {user}")
-#         return Response(
-#             {"message": "Report not found"}, status=status.HTTP_404_NOT_FOUND
-#         )
-
-#     data = request.data
-
-#     car_photos = data.get("car_photos", [])
-#     decoded_photos = []
-#     for index, photo in enumerate(car_photos):
-#         try:
-#             format, imgstr = photo.split(";base64,")
-#             ext = format.split("/")[-1]
-#             decoded_photos.append(f"data:image/{ext};base64,{imgstr}")
-#         except Exception as e:
-#             return Response(
-#                 {"message": f"Error processing image: {str(e)}"},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-#     report.car_name = data.get("car_name", report.car_name)
-#     report.company = data.get("company", report.company)
-#     report.color = data.get("color", report.color)
-#     report.condition = data.get("condition", report.condition)
-#     report.model = data.get("model", report.model)
-#     report.fuel_type = data.get("fuel_type", report.fuel_type)
-#     report.year = data.get("year", report.year)
-#     report.engine_capacity = data.get("engine_capacity", report.engine_capacity)
-#     report.mileage = data.get("mileage", report.mileage)
-#     report.engine_type = data.get("engine_type", report.engine_type)
-#     report.transmission_type = data.get("transmission_type", report.transmission_type)
-
-#     report.engine_condition = data.get("engine_condition", report.engine_condition)
-#     report.body_condition = data.get("body_condition", report.body_condition)
-#     report.clutch_condition = data.get("clutch_condition", report.clutch_condition)
-#     report.steering_condition = data.get(
-#         "steering_condition", report.steering_condition
-#     )
-#     report.suspension_condition = data.get(
-#         "suspension_condition", report.suspension_condition
-#     )
-#     report.brakes_condition = data.get("brakes_condition", report.brakes_condition)
-#     report.ac_condition = data.get("ac_condition", report.ac_condition)
-#     report.tyres_condition = data.get("tyres_condition", report.tyres_condition)
-#     report.electrical_condition = data.get(
-#         "electrical_condition", report.electrical_condition
-#     )
-
-#     report.estimated_value = data.get("estimated_value", report.estimated_value)
-#     report.saler_demand = data.get("saler_demand", report.saler_demand)
-
-#     report.additional_comments = data.get(
-#         "additional_comments", report.additional_comments
-#     )
-#     report.car_photos = decoded_photos if decoded_photos else report.car_photos
-
-#     condition_fields = [
-#         report.engine_condition,
-#         report.body_condition,
-#         report.clutch_condition,
-#         report.steering_condition,
-#         report.suspension_condition,
-#         report.brakes_condition,
-#         report.ac_condition,
-#         report.electrical_condition,
-#         report.tyres_condition,
-#     ]
-#     report.overall_score = sum(condition_fields) / len(condition_fields)
-
-#     report.save()
-
-#     # Send Notifications
-#     try:
-#         if report.saler_car.user:
-#             Notification.objects.create(
-#                 recipient=report.saler_car.user,
-#                 message=f"Your car '{report.saler_car.car_name}' inspection report has been updated.",
-#                 category="inspection_updated",
-#                 saler_car=report.saler_car,
-#             )
-
-#         dealers = User.objects.filter(role="dealer")
-#         for dealer in dealers:
-#             Notification.objects.create(
-#                 recipient=dealer,
-#                 message=f"Updated inspection report available for '{report.saler_car.car_name}'.",
-#                 category="dealer_inspection_updated",
-#                 saler_car=report.saler_car,
-#             )
-
-#         admins = User.objects.filter(role="admin")
-#         for admin in admins:
-#             Notification.objects.create(
-#                 recipient=admin,
-#                 message=f"Inspection report updated for '{report.saler_car.car_name}'.",
-#                 category="admin_inspection_updated",
-#                 saler_car=report.saler_car,
-#             )
-
-#     except Exception as e:
-#         logger.error(f"Error while creating notifications: {str(e)}")
-
-#     serialized_report = InspectionReportSerializer(report)
-#     return Response(
-#         {
-#             "message": "Inspection report updated successfully",
-#             "report": serialized_report.data,
-#         },
-#         status=status.HTTP_200_OK,
-#     )
 
 
 @api_view(["PUT"])
@@ -3765,9 +3096,6 @@ def update_inspection_report_mob(request, report_id):
 
 
 # INSPECTOR MAKE SCHEDULE//////////////////
-
-
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def add_availability(request):
@@ -3914,16 +3242,7 @@ def get_seller_appointment_notification(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-from datetime import datetime
-
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-
-from .models import Availability, SelectedSlot, saler_car_details
-
-
+# show free slot of inspector to seller/inspector 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_free_slots(request):
@@ -3937,7 +3256,6 @@ def get_free_slots(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Parse the input date
         if date:
             try:
                 date_obj = datetime.strptime(date, "%Y-%m-%d").date()
@@ -4064,8 +3382,6 @@ def get_free_slots(request):
         )
 
 
-
-
 # GET ALL SLOTS -----NOT USED
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -4187,31 +3503,6 @@ def get_inspection_report(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def get_inspection_report(request):
-#     car_id = request.GET.get("car_id")
-
-#     if not car_id:
-#         return Response(
-#             {"message": "Provide Car ID"}, status=status.HTTP_400_BAD_REQUEST
-#         )
-
-#     reports = InspectionReport.objects.select_related("saler_car__user").filter(
-#         saler_car=car_id
-#     )
-
-#     if not reports.exists():
-#         return Response(
-#             {"message": "No report found for this car"},
-#             status=status.HTTP_404_NOT_FOUND,
-#         )
-
-#     serialized_reports = InspectionReportSerializer(reports, many=True)
-
-#     return Response(serialized_reports.data, status=status.HTTP_200_OK)
-
-
 # get list of guest cars to show to inspector
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -4275,39 +3566,8 @@ def get_bidding_cars(request):
         {"message": "Cars fetched successfully", "cars": serializer.data},
         status=status.HTTP_200_OK,
     )
-    
-    
-    
-# # expired cars status for dealer and admin
-# @api_view(["GET"])
-# @permission_classes([IsAuthenticated])
-# def get_expired_cars(request):
-#     user = request.user
-
- 
-#     seller_cars = saler_car_details.objects.filter(status="expired")
-#     guest_cars = Guest.objects.filter(status="expired")
-
-#     if not seller_cars.exists() and not guest_cars.exists():
-#         return Response(
-#             {"error": "No cars found in Expired status"},
-#             status=status.HTTP_404_NOT_FOUND,
-#         )
-
-#     seller_serializer = SalerCarDetailsSerializer(seller_cars, many=True)
-#     guest_serializer = GuestSerializer(guest_cars, many=True)
-
-#     return Response(
-#         {
-#             "message": "Cars fetched successfully",
-#             "cars": {
-#                 "seller_cars": seller_serializer.data,
-#                 "guest_cars": guest_serializer.data
-#             }
-#         },
-#         status=status.HTTP_200_OK,
-#     )
-
+     
+# /////cars with status expired///////
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_expired_cars(request):
@@ -4315,21 +3575,18 @@ def get_expired_cars(request):
 
     now = timezone.now()
 
-    # Auto-update seller cars whose bidding ended
     saler_car_details.objects.filter(
         status="bidding",
         bidding_end_time__lt=now,
         is_sold=False
     ).update(status="expired")
 
-    # Auto-update guest cars whose bidding ended
     Guest.objects.filter(
         status="bidding",
         bidding_end_time__lt=now,
         is_sold=False
     ).update(status="expired")
 
-    # Fetch all expired cars
     seller_cars = saler_car_details.objects.filter(status="expired")
     guest_cars = Guest.objects.filter(status="expired")
 
@@ -4353,14 +3610,14 @@ def get_expired_cars(request):
         status=200,
     )
 
-# get cars with status inspection for dealer and admin (upcoming)
+# get cars with status in-spection for dealer and admin (upcoming)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_upcoming_cars(request):
+    # seller cars
     cars = saler_car_details.objects.filter(
         Q(status="pending") | Q(status="in_inspection") | Q(status="await_approval")
-    )
-    
+    )    
        # Fetch guest cars
     guest_cars = Guest.objects.filter(
         Q(status="pending") | Q(status="in_inspection") | Q(status="await_approval")
@@ -4473,49 +3730,6 @@ def place_bid(request):
     )
 
 
-# @api_view(["POST"])
-# @permission_classes([IsAuthenticated])
-# def place_bid(request):
-#     user = request.user
-
-#     if user.role != "dealer":
-#         return Response(
-#             {"message": "Only dealers can place bids"}, status=status.HTTP_403_FORBIDDEN
-#         )
-#     data = request.data
-#     try:
-#         saler_car = saler_car_details.objects.get(saler_car_id=data["saler_car"])
-#     except saler_car_details.DoesNotExist:
-#         return Response({"message": "Car not found"}, status=status.HTTP_404_NOT_FOUND)
-
-#     if saler_car.is_sold:
-#         return Response(
-#             {"message": "This car is already sold"}, status=status.HTTP_400_BAD_REQUEST
-#         )
-#     bid = Bidding.objects.create(
-#         dealer=user, saler_car=saler_car, bid_amount=data["bid_amount"]
-#     )
-#     User = get_user_model()
-#     admin_users = User.objects.filter(role="admin")
-#     for admin in admin_users:
-#         Notification.objects.create(
-#             recipient=admin,
-#             message=f"A new bid of {data['bid_amount']} has been placed on {saler_car.company} {saler_car.car_name}",
-#             saler_car=saler_car,
-#             category="new_bid",
-#             bid=bid,
-#         )
-#     serializer = BiddingSerializer(bid)
-#     return Response(
-#         {
-#             "message": "Bid placed successfully",
-#             "bid_id": bid.id,
-#             "bid": serializer.data,
-#         },
-#         status=status.HTTP_201_CREATED,
-#     )
-
-
 # DEALER CAN VIEW THEIR OWN BIDS
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -4564,69 +3778,6 @@ def dealer_inventory(request):
 
 
 # ///////////////////////////////////GUEST APIs////////////////////////////////////////////
-
-# GUEST ADD ITS BASIC DETAILS
-
-
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# def post_guest_details(request):
-#     serializer = GuestSerializer(data=request.data)
-#     print(request.data)
-
-#     if serializer.is_valid():
-#         guest = serializer.save()
-#         return Response(
-#             {"Message": "Data saved", "guest_id": guest.id, "data": serializer.data},
-#             status=status.HTTP_201_CREATED,
-#         )
-
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# GUEST POST CAR FOR SALE
-# @api_view(["POST"])
-# @permission_classes([AllowAny])
-# def guest_add_car_details(request):
-#     try:
-#         data = request.data.copy()
-#         data["added_by"] = "guest"
-
-#         guest_id = data.get("guest_id")
-#         if not guest_id:
-#             return Response(
-#                 {"error": "Guest ID is required."}, status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         try:
-#             guest = Guest.objects.get(id=guest_id)
-#         except Guest.DoesNotExist:
-#             return Response(
-#                 {"error": "Invalid Guest ID."}, status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         data.pop("guest_id", None)
-#         serializer = SalerCarDetailsSerializer(data=data)
-#         if serializer.is_valid():
-#             car_details = serializer.save(guest=guest)
-
-#             return Response(
-#                 {
-#                     "message": "Car added successfully!",
-#                     "car_id": car_details.saler_car_id,
-#                 },
-#                 status=status.HTTP_201_CREATED,
-#             )
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     except Exception as e:
-#         print(f"Error in guest_add_car_details view: {str(e)}")
-#         return Response(
-#             {"success": False, "message": "An error occurred while adding car details"},
-#             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#         )
-
 
 # GUEST POST AD
 @api_view(["POST"])
