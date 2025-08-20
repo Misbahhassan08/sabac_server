@@ -22,6 +22,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     dealer_update,
     dealersList,
     delete_ad,
+    delete_guest_ad,
     delete_images,
     delete_saler,
     delete_user,
@@ -149,6 +150,7 @@ urlpatterns = [
     path("update_ad/<int:car_id>", update_ad, name="update_ad"),
     # seller selete its posted car
     path("delete_ad/<int:car_id>", delete_ad, name="ad delete"),
+    path("delete_guest_ad/<int:car_id>", delete_guest_ad, name="ad delete"),
 
     path(
         "get_car_details/", get_car_details, name="get_car_details"

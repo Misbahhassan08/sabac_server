@@ -2384,15 +2384,42 @@ def delete_ad(request, car_id):
     except saler_car_details.DoesNotExist:
         return Response({"message": "car not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if car.user != user:
-        print("car owner:", car.user)
-        return Response(
-            {"message": "Unauthentecated"}, status=status.HTTP_403_FORBIDDEN
-        )
+    # if car.user != user:
+    #     print("car owner:", car.user)
+    #     return Response(
+    #         {"message": "Unauthentecated"}, status=status.HTTP_403_FORBIDDEN
+    #     )
 
     car.delete()
 
     return Response({"message": "car deleted successfully"}, status=status.HTTP_200_OK)
+# Guest ITS CAR
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_guest_ad(request, car_id):
+    user = request.user
+
+
+    try:
+        car = Guest.objects.get(id=car_id)
+    except Guest.DoesNotExist:
+        return Response({"message": "car not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # if car.user != user:
+    #     print("car owner:", car.user)
+    #     return Response(
+    #         {"message": "Unauthentecated"}, status=status.HTTP_403_FORBIDDEN
+    #     )
+
+    car.delete()
+
+    return Response({"message": "car deleted successfully"}, status=status.HTTP_200_OK)
+
+
+
+
+    
+
 
 
 # SELLER UPDATED ITS CAR DETAIL
