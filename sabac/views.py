@@ -438,6 +438,124 @@ def get_car_for_inventory(request):
         },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# /////////Sold CARS////////////
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_seller_sold_cars(request):
+    try:
+        cars = saler_car_details.objects.filter(status="sold", is_sold=True)
+        data = []
+
+        for car in cars:
+            sold_bid = car.min_bid_amount 
+
+            if car.winner_dealer:  
+                bid = Bidding.objects.filter(
+                    saler_car=car,
+                    dealer=car.winner_dealer,
+                    status="accepted"
+                ).order_by("-bid_amount").first()
+                if bid:
+                    sold_bid = bid.bid_amount
+
+            data.append({
+                "car_id": car.saler_car_id,
+                "car_name": car.car_name,
+                "car_variant": car.car_variant,
+                "company": car.company,
+                "year": car.year,
+                "engine_size": car.engine_size,
+                "milage": car.milage,
+                "photos": car.photos,
+                "status": car.status,
+                "is_sold": car.is_sold,
+                "owner": {
+                    "first_name": car.user.first_name,
+                    "last_name": car.user.last_name,
+                    "number":car.user.phone_number
+                },
+                "winner_dealer": {
+                    "id": car.winner_dealer.id if car.winner_dealer else None,
+                    "username": car.winner_dealer.username if car.winner_dealer else None,
+                    "email": car.winner_dealer.email if car.winner_dealer else None,
+                    "first_name": car.winner_dealer.first_name if car.winner_dealer else None,
+                    "last_name": car.winner_dealer.last_name if car.winner_dealer else None,
+                } if car.winner_dealer else None,
+                "sold_bid": sold_bid,
+            })
+
+        return Response({
+            "status": True,
+            "message": "Sold cars fetched successfully",
+            "data": data
+        }, status=200)
+
+    except Exception as e:
+        return Response({
+            "status": False,
+            "message": str(e)
+        }, status=500)
+        
+# ///////////////Guest sold cars///////////////
+    
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_guest_sold_cars(request):
+    try:
+        cars = Guest.objects.filter(status="sold", is_sold=True)
+        data = []
+
+        for car in cars:
+            sold_bid = car.min_bid_amount  
+
+            if car.winner_dealer:  
+                bid = Bidding.objects.filter(
+                    guest_car=car,
+                    dealer=car.winner_dealer,
+                    status="accepted"
+                ).order_by("-bid_amount").first()
+                if bid:
+                    sold_bid = bid.bid_amount
+
+            data.append({
+                "car_id": car.id,
+                "car_name": car.car_name,
+                "car_variant": car.car_variant,
+                "company": car.company,
+                "year": car.year,
+                "engine_size": car.engine_size,
+                "milage": car.milage,
+                "photos": car.photos,
+                "status": car.status,
+                "is_sold": car.is_sold,
+                "owner":{
+                    "name":car.name,
+                    "number":car.number
+                    
+                },
+                "winner_dealer": {
+                    "id": car.winner_dealer.id if car.winner_dealer else None,
+                    "username": car.winner_dealer.username if car.winner_dealer else None,
+                    "email": car.winner_dealer.email if car.winner_dealer else None,
+                    "first_name": car.winner_dealer.first_name if car.winner_dealer else None,
+                    "last_name": car.winner_dealer.last_name if car.winner_dealer else None,
+                } if car.winner_dealer else None,
+                "sold_bid": sold_bid,
+            })
+
+        return Response({
+            "status": True,
+            "message": "Sold cars fetched successfully",
+            "data": data
+        }, status=200)
+
+    except Exception as e:
+        return Response({
+            "status": False,
+            "message": str(e)
+        }, status=500)
+    
 
     
 # ///////////update the defualt bidding time guest car////////

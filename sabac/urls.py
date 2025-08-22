@@ -42,6 +42,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     get_expired_cars,
     get_free_slots,
     get_guest_car_details,
+    get_guest_sold_cars,
     get_highest_bid,
     get_inspection_report,
     get_inspection_report_guest,
@@ -57,6 +58,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     get_reviewd_inspection,
     get_selected_slots,
     get_seller_appointment_notification,
+    get_seller_sold_cars,
     get_upcoming_cars,
     get_upcoming_cars_by_guest,
     get_user_cars,
@@ -365,7 +367,9 @@ urlpatterns = [
     path("get_expired_cars/",get_expired_cars,name="get_expired_cars"),
     path("moved_to_inventory/<int:car_id>",moved_to_inventory,name="moved_to_inventory"),
     path("moved_to_inventory_guest_car/<int:car_id>",moved_to_inventory_guest_car,name="moved_to_inventory_guest_car"),
-    path("get_car_for_inventory",get_car_for_inventory,name="get_car_for_inventory")
+    path("get_car_for_inventory",get_car_for_inventory,name="get_car_for_inventory"),
+    path("get_seller_sold_cars/",get_seller_sold_cars,name="get_seller_sold_cars"),
+    path("get_guest_sold_cars/",get_guest_sold_cars,name="get_guest_sold_cars")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
