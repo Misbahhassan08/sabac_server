@@ -3686,6 +3686,63 @@ def get_guest_car_details(request):
 # ///////////////////////////DEALERS APIs/////////////////////////
 
 
+# dealer latest bid on specefic car
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dealer_latest_bid_on_car(request, car_id, car_type):
+   
+    dealer = request.user
+
+    bid = None
+    car_name = ""
+
+    try:
+        if car_type == "seller":
+            car = saler_car_details.objects.get(saler_car_id=car_id)
+            bid = (
+                Bidding.objects.filter(dealer=dealer, saler_car=car)
+                .order_by("-created_at")
+                .first()
+            )
+            car_name = f"{car.company} {car.car_name}"
+
+        elif car_type == "guest":
+            car = Guest.objects.get(id=car_id)
+            bid = (
+                Bidding.objects.filter(dealer=dealer, guest_car=car)
+                .order_by("-created_at")
+                .first()
+            )
+            car_name = f"{car.company} {car.car_name}"
+
+        else:
+            return Response(
+                {"message": "Invalid car_type. Use 'saler' or 'guest'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not bid:
+            return Response(
+                {"message": f"You have not placed any bid on {car_name}."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            {
+                "message": f"Your latest bid on {car_name}",
+                "dealer": dealer.first_name,
+                "bid_amount": bid.bid_amount,
+                "car": car_name,
+                "bid_id": bid.id,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except (saler_car_details.DoesNotExist, Guest.DoesNotExist):
+        return Response({"message": "Car not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
 
 # bidding cars status for dealer and admin
 @api_view(["GET"])
@@ -3851,9 +3908,9 @@ def place_bid(request):
     admin_users = User.objects.filter(role="admin")
     for admin in admin_users:
         if saler_car:
-            message = f"A new bid of {bid_amount} has been placed on {saler_car.company} {saler_car.car_name}"
+            message = f"A new bid of {bid_amount} has been placed on {saler_car.company} {saler_car.car_name} by dealer {bid.dealer.first_name}"
         else:
-            message = f"A new bid of {bid_amount} has been placed on {guest_car.company} {guest_car.car_name}"
+            message = f"A new bid of {bid_amount} has been placed on {guest_car.company} {guest_car.car_name} by dealer {bid.dealer.first_name}"
 
         Notification.objects.create(
             recipient=admin,

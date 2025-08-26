@@ -18,6 +18,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     carsStats,
     confirm_reset_password,
     dealer_inventory,
+    dealer_latest_bid_on_car,
     dealer_register,
     dealer_update,
     dealersList,
@@ -369,7 +370,8 @@ urlpatterns = [
     path("moved_to_inventory_guest_car/<int:car_id>",moved_to_inventory_guest_car,name="moved_to_inventory_guest_car"),
     path("get_car_for_inventory",get_car_for_inventory,name="get_car_for_inventory"),
     path("get_seller_sold_cars/",get_seller_sold_cars,name="get_seller_sold_cars"),
-    path("get_guest_sold_cars/",get_guest_sold_cars,name="get_guest_sold_cars")
+    path("get_guest_sold_cars/",get_guest_sold_cars,name="get_guest_sold_cars"),
+    path("dealer_latest_bid_on_car/<int:car_id>/<str:car_type>/",dealer_latest_bid_on_car,name="dealer_latest_bid_on_car")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
