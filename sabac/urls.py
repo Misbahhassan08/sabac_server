@@ -371,7 +371,7 @@ urlpatterns = [
     path("get_car_for_inventory",get_car_for_inventory,name="get_car_for_inventory"),
     path("get_seller_sold_cars/",get_seller_sold_cars,name="get_seller_sold_cars"),
     path("get_guest_sold_cars/",get_guest_sold_cars,name="get_guest_sold_cars"),
-    path("dealer_latest_bid_on_car/<int:car_id>/<str:car_type>",dealer_latest_bid_on_car,name="dealer_latest_bid_on_car")
+    path("dealer_latest_bid_on_car/<int:car_id>/<str:car_type>/",dealer_latest_bid_on_car,name="dealer_latest_bid_on_car")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
