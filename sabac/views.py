@@ -1650,8 +1650,8 @@ def set_up_live_duration(request):
     except saler_car_details.DoesNotExist:
         return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
     
-    if car.status != "expired":
-        return Response({"message" : "car is not Expired yet"},status=status.HTTP_400_BAD_REQUEST)
+    if car.status != "bidding":
+        return Response({"message" : "car is not in Bidding yet"},status=status.HTTP_400_BAD_REQUEST)
     
     if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
@@ -1720,8 +1720,8 @@ def set_up_live_duration_guest_car(request):
     except Guest.DoesNotExist:
         return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
     
-    if car.status != "expired":
-        return Response({"message" : "car is not Expired yet"},status=status.HTTP_400_BAD_REQUEST)
+    if car.status != "bidding":
+        return Response({"message" : "car is not in Bidding yet"},status=status.HTTP_400_BAD_REQUEST)
     
     if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
@@ -3695,6 +3695,7 @@ def dealer_latest_bid_on_car(request, car_id, car_type):
 
     bid = None
     car_name = ""
+    max_bid = None
 
     try:
         if car_type == "seller":
@@ -3704,6 +3705,9 @@ def dealer_latest_bid_on_car(request, car_id, car_type):
                 .order_by("-created_at")
                 .first()
             )
+            max_bid = (Bidding.objects.filter(saler_car=car)
+                       .order_by("-bid_amount")
+                       .first())
             car_name = f"{car.company} {car.car_name}"
 
         elif car_type == "guest":
@@ -3713,6 +3717,11 @@ def dealer_latest_bid_on_car(request, car_id, car_type):
                 .order_by("-created_at")
                 .first()
             )
+            
+            max_bid = (Bidding.objects.filter(guest_car=car)
+                       .order_by("-bid_amount")
+                       .first())
+            
             car_name = f"{car.company} {car.car_name}"
 
         else:
@@ -3734,6 +3743,7 @@ def dealer_latest_bid_on_car(request, car_id, car_type):
                 "bid_amount": bid.bid_amount,
                 "car": car_name,
                 "bid_id": bid.id,
+                "max_bid_amount":max_bid.bid_amount if max_bid else None
             },
             status=status.HTTP_200_OK,
         )
