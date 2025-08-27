@@ -1650,8 +1650,8 @@ def set_up_live_duration(request):
     except saler_car_details.DoesNotExist:
         return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
     
-    if car.status != "bidding":
-        return Response({"message" : "car is not in Live yet"},status=status.HTTP_400_BAD_REQUEST)
+    if car.status != "expired":
+        return Response({"message" : "car is not Expired yet"},status=status.HTTP_400_BAD_REQUEST)
     
     if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
@@ -1720,8 +1720,8 @@ def set_up_live_duration_guest_car(request):
     except Guest.DoesNotExist:
         return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
     
-    if car.status != "bidding":
-        return Response({"message" : "car is not in Live yet"},status=status.HTTP_400_BAD_REQUEST)
+    if car.status != "expired":
+        return Response({"message" : "car is not Expired yet"},status=status.HTTP_400_BAD_REQUEST)
     
     if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
