@@ -3690,9 +3690,7 @@ def get_guest_car_details(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dealer_latest_bid_on_car(request, car_id, car_type):
-   
     dealer = request.user
-
     bid = None
     car_name = ""
     max_bid = None
@@ -3700,57 +3698,74 @@ def dealer_latest_bid_on_car(request, car_id, car_type):
     try:
         if car_type == "seller":
             car = saler_car_details.objects.get(saler_car_id=car_id)
+
+            # Dealer's latest bid
             bid = (
                 Bidding.objects.filter(dealer=dealer, saler_car=car)
                 .order_by("-created_at")
                 .first()
             )
-            max_bid = (Bidding.objects.filter(saler_car=car)
-                       .order_by("-bid_amount")
-                       .first())
+
+
+            max_bid = (
+                Bidding.objects.filter(saler_car=car)
+                .order_by("-bid_amount")
+                .first()
+            )
+
             car_name = f"{car.company} {car.car_name}"
 
         elif car_type == "guest":
             car = Guest.objects.get(id=car_id)
+
+
             bid = (
                 Bidding.objects.filter(dealer=dealer, guest_car=car)
                 .order_by("-created_at")
                 .first()
             )
-            
-            max_bid = (Bidding.objects.filter(guest_car=car)
-                       .order_by("-bid_amount")
-                       .first())
-            
+
+            max_bid = (
+                Bidding.objects.filter(guest_car=car)
+                .order_by("-bid_amount")
+                .first()
+            )
+
             car_name = f"{car.company} {car.car_name}"
 
         else:
             return Response(
-                {"message": "Invalid car_type. Use 'saler' or 'guest'."},
+                {"message": "Invalid car_type. Use 'seller' or 'guest'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not bid:
-            return Response(
-                {"message": f"You have not placed any bid on {car_name}."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        # Prepare response
+        response_data = {
+            "car": car_name,
+            "max_bid_amount": max_bid.bid_amount if max_bid else None,
+            "max_bid_dealer": max_bid.dealer.first_name if max_bid else None,
+        }
 
-        return Response(
-            {
+        if bid:
+            response_data.update({
                 "message": f"Your latest bid on {car_name}",
                 "dealer": dealer.first_name,
                 "bid_amount": bid.bid_amount,
-                "car": car_name,
                 "bid_id": bid.id,
-                "max_bid_amount":max_bid.bid_amount if max_bid else None
-            },
-            status=status.HTTP_200_OK,
-        )
+            })
+        else:
+            response_data.update({
+                "message": f"You have not placed any bid on {car_name}.",
+                "dealer": dealer.first_name,
+                "bid_amount": None,
+                "bid_id": None,
+            })
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     except (saler_car_details.DoesNotExist, Guest.DoesNotExist):
         return Response({"message": "Car not found"}, status=status.HTTP_404_NOT_FOUND)
-        
+
 
 
 
