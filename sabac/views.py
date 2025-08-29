@@ -414,17 +414,22 @@ def get_car_for_inventory(request):
         # for guest cars
         guest_cars = Guest.objects.filter(status="in_inventory")
         
+        admins = User.objects.filter(role="admin").values("id", "first_name", "last_name","phone_number")
+        
         if not seller_cars.exists() and not guest_cars.exists():
             return Response({
                 "success" : False,
                 "message" : "No cars available for inventory",
-                "data" : {"seller_cars":[], "guest_cars":[] }
-                },status=status.HTTP_404_NOT_FOUND)
+                "seller_cars":[],
+                "guest_cars":[],
+                "admins": list(admins)
+                
+                },status=status.HTTP_200_OK)
         
         seller_serializer = SalerCarDetailsSerializer(seller_cars , many=True)
         guest_serializer = GuestSerializer(guest_cars,many=True)
         
-        admins = User.objects.filter(role="admin").values("id", "first_name", "last_name","phone_number")
+
         
         return Response({
             "success" : True,
