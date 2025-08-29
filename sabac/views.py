@@ -424,11 +424,14 @@ def get_car_for_inventory(request):
         seller_serializer = SalerCarDetailsSerializer(seller_cars , many=True)
         guest_serializer = GuestSerializer(guest_cars,many=True)
         
+        admins = User.objects.filter(role="admin").values("id", "first_name", "last_name","phone_number")
+        
         return Response({
             "success" : True,
             "message" : "car fetched successfully",
             "seller_car" : seller_serializer.data,
-            "guest_cars": guest_serializer.data
+            "guest_cars": guest_serializer.data,
+            "admins": list(admins)
         },status=status.HTTP_200_OK)
         
     except Exception as e:
@@ -4108,14 +4111,14 @@ def dealer_inventory(request):
     seller_cars = SalerCarDetailsSerializer(cars, many=True)
     guest_cars = GuestSerializer(guest, many=True)
     
-    admins = User.objects.filter(role="admin").values("id", "first_name", "last_name","phone_number")
+    # admins = User.objects.filter(role="admin").values("id", "first_name", "last_name","phone_number")
 
     return Response(
         {
             "message": "success",
             "seller_cars": seller_cars.data,
             "guest_cars": guest_cars.data,
-            "admins": list(admins)
+            # "admins": list(admins)
         },
         status=status.HTTP_200_OK,
     )
