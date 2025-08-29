@@ -94,6 +94,8 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     saler_manual_entry,
     saler_register,
     saler_update,
+    sell_guest_car_to_dealer,
+    sell_seller_car_to_dealer,
     seller_manual_entries,
     set_up_live_duration,
     set_up_live_duration_guest_car,
@@ -323,6 +325,8 @@ urlpatterns = [
     path("get_all_bidding/", get_all_bidding, name="get_all_bidding"),
     path("live-cars/", get_all_sold_cars, name="get_all_sold_cars"),
     path("bid_notification_for_seller/",bid_notification_for_seller,name="bid_notification_for_seller"),
+    path("sell_seller_car_to_dealer/<int:car_id>/<int:dealer_id>/",sell_seller_car_to_dealer,name="sell_seller_car_to_dealer"),
+    path("sell_guest_car_to_dealer/<int:car_id>/<int:dealer_id>/",sell_guest_car_to_dealer,name="sell_guest_car_to_dealer"),
     
     
     

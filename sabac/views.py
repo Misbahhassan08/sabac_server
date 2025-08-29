@@ -1128,6 +1128,97 @@ def dealersList(request):
         )
 
 
+
+
+# admin sold seller car to dealer directly
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def sell_seller_car_to_dealer(request , dealer_id,car_id):
+    try:
+        car= saler_car_details.objects.get(saler_car_id = car_id)
+        if car.status == "sold":
+            return Response({"message" : "Car already sold"},status=status.HTTP_400_BAD_REQUEST)
+    except saler_car_details.DoesNotExist:
+        return Response({"message" : "car not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        dealer = User.objects.get(id=dealer_id,role="dealer")
+    except User.DoesNotExist:
+        return Response({"message" : "User not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    car.is_sold = True
+    car.status = "sold"
+    car.winner_dealer = dealer
+    car.save()
+    
+    # notification for dealer
+    Notification.objects.create(
+        recipient = dealer,
+        message = f"Admin sold you a car {car.company} {car.car_name} {car.year} {car.car_variant}",
+        category = "direct_sold",
+        saler_car=car,
+        is_read=False
+    )
+    # notification for seller
+    Notification.objects.create(
+        recipient = car.user,
+        message = f"Your car {car.company} {car.car_name} {car.year} {car.car_variant} has been Sold",
+        category = "sold_car",
+        saler_car=car,
+        is_read=False
+    )
+    return Response(
+        {"message": f"Car {car.company} {car.car_name} sold to dealer {dealer.username}"},
+        status=status.HTTP_200_OK,
+    )
+    
+# admin sold guest car to dealer directly
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def sell_guest_car_to_dealer(request , dealer_id,car_id):
+    try:
+        car= Guest.objects.get(id = car_id)
+        if car.status == "sold":
+            return Response({"message" : "Car already sold"},status=status.HTTP_400_BAD_REQUEST)
+    except saler_car_details.DoesNotExist:
+        return Response({"message" : "car not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        dealer = User.objects.get(id=dealer_id,role="dealer")
+    except User.DoesNotExist:
+        return Response({"message" : "User not found"},status=status.HTTP_404_NOT_FOUND)
+    
+    car.is_sold = True
+    car.status = "sold"
+    car.winner_dealer = dealer
+    car.save()
+    
+    # notification for dealer
+    Notification.objects.create(
+        recipient = dealer,
+        message = f"Admin sold you a car {car.company} {car.car_name} {car.year} {car.car_variant}",
+        category = "direct_sold",
+        guest_car=car,
+        is_read=False
+    )
+    # notification for seller
+    # Notification.objects.create(
+    #     recipient = car.user,
+    #     message = f"Your car {car.company} {car.car_name} {car.year} {car.car_variant} has been Sold",
+    #     category = "sold_car",
+    #     saler_car=car,
+    #     is_read=False
+    # )
+    return Response(
+        {"message": f"Car {car.company} {car.car_name} sold to dealer {dealer.username}"},
+        status=status.HTTP_200_OK,
+    )
+    
+    
+    
+
+
+
 # list of inspectors
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -1394,6 +1485,15 @@ def accept_bid(request, bid_id):
         Bidding.objects.filter(guest_car=car).exclude(id=bid_id).update(
             status="rejected"
         )
+        # on bid accpet mark the notification as read
+    try:
+        notification = Notification.objects.get(
+            bid=bid, category="new_bid", is_read=False
+        )
+        notification.is_read = True
+        notification.save()
+    except Notification.DoesNotExist:
+        pass
 
     Notification.objects.create(
         recipient=bid.dealer,
@@ -1430,17 +1530,28 @@ def reject_bid(request, bid_id):
 
     bid = get_object_or_404(Bidding, id=bid_id)
 
-    if bid.status != "pending":
-        return Response(
-            {"message": "Bid has already been processed"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    # if bid.status != "pending":
+    #     return Response(
+    #         {"message": "Bid has already been processed"},
+    #         status=status.HTTP_400_BAD_REQUEST,
+    #     )
 
     bid.is_accepted = False
     bid.status = "rejected"
     bid.save()
 
     car = bid.saler_car or bid.guest_car
+    
+    # on bid accpet mark the notification as read
+    try:
+        notification = Notification.objects.get(
+            bid=bid, category="new_bid", is_read=False
+        )
+        notification.is_read = True
+        notification.save()
+    except Notification.DoesNotExist:
+        pass
+
 
     Notification.objects.create(
         recipient=bid.dealer,
@@ -1495,6 +1606,7 @@ def bid_notification_for_seller(request):
         unread_notifications = Notification.objects.filter(
             recipient=user, category="new_bid", is_read=False
         ).order_by("-created_at")
+        
         serializer = NotificationSerializer(unread_notifications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Exception as e:
@@ -1502,6 +1614,8 @@ def bid_notification_for_seller(request):
             {"message": f"Error: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+
 
 # mark the bid notification as read
 @api_view(["POST"])
@@ -3993,12 +4107,15 @@ def dealer_inventory(request):
 
     seller_cars = SalerCarDetailsSerializer(cars, many=True)
     guest_cars = GuestSerializer(guest, many=True)
+    
+    admins = User.objects.filter(role="admin").values("id", "first_name", "last_name","phone_number")
 
     return Response(
         {
             "message": "success",
             "seller_cars": seller_cars.data,
             "guest_cars": guest_cars.data,
+            "admins": list(admins)
         },
         status=status.HTTP_200_OK,
     )
