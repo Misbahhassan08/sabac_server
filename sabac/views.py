@@ -177,6 +177,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 user = User.objects.get(email=username_or_email)
             else:
                 user = User.objects.get(username=username_or_email)
+                
+            if not user.has_usable_password():
+                return Response(
+                    {
+                        "success": False,
+                        "message": "This account was created with Google. Please login using Google."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             request.data["username"] = user.username
 
@@ -244,6 +253,72 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         except Exception as e:
             return Response({"success": False, "error": str(e)}, status=400)
 
+
+
+# GOOGLE LOGIN
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def google_register_login(request):
+    google_token = request.data.get("google_token")
+    email = request.data.get("email")  
+    name = request.data.get("name", "")
+    picture = request.data.get("picture", "")
+    device_id = request.data.get("device_id")
+
+    if not google_token or not email:
+        return Response({"success": False, "message": "Token and email required"}, status=400)
+
+    try:
+        
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": email.split("@")[0],
+                "first_name": name,
+                "image": picture,
+                "google_token": google_token,
+            }
+        )
+        
+        if created:
+            user.set_unusable_password() 
+
+        # ✅ Update token each time
+        if not created:
+            user.google_token = google_token
+            if name: 
+                user.first_name = name
+            if picture:
+                user.image = picture
+            user.save()
+
+        # ✅ Create JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+
+        if device_id:
+            DeviceToken.objects.update_or_create(
+                user=user,
+                device_id=device_id,
+                defaults={"token": str(refresh)},
+            )
+
+        return Response({
+            "success": True,
+            "access_token": access,
+            "refresh_token": str(refresh),
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "image": user.image,
+                "role": user.role,
+            }
+        })
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
 
 # refreshing the access token
 class CustomRefreshTokenView(TokenRefreshView):
@@ -1807,7 +1882,7 @@ def set_up_live_duration(request):
         remaining_seconds = remaining_seconds % 60
     
     return Response({
-        "message" : "Live Duration updated badi mushkill se",
+        "message" : "Live Duration updated",
         "car_id" : car.saler_car_id,
         "new_end_time":car.bidding_end_time,
         "remaing_time" :{
@@ -2396,8 +2471,8 @@ def saler_register(request):
                 "username": user.username,
                 "email": user.email,
                 "phone_number": user.phone_number,
-                "adress": user.adress,  # ✅ return it
-                "image": user.image,  # ✅ return it
+                "adress": user.adress, 
+                "image": user.image, 
                 "role": user.role,
             },
             status=status.HTTP_201_CREATED,
@@ -2444,7 +2519,7 @@ def inspector_register(request):
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "role": user.role,
-                "plain_password": user.plain_password,  # include plain password in response
+                "plain_password": user.plain_password,  
             },
             status=status.HTTP_201_CREATED,
         )
@@ -2656,9 +2731,6 @@ def delete_guest_ad(request, car_id):
     return Response({"message": "car deleted successfully"}, status=status.HTTP_200_OK)
 
 
-
-
-    
 
 
 

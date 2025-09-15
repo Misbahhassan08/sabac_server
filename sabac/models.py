@@ -20,6 +20,7 @@ class User(AbstractUser):
     adress = models.CharField(max_length=500)
     image = models.CharField(max_length=500, null=True, blank=True)
     plain_password = models.CharField(max_length=100,null=True,blank=True)
+    google_token = models.CharField(max_length=500, null=True, blank=True) 
 
 
     def __str__(self):

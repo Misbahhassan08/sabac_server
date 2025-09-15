@@ -37,6 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone_number",
             "adress",
             "image",
+            "google_token"
         ]
         extra_kwargs = {
             "plain_password": {"read_only": True},

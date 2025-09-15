@@ -64,6 +64,7 @@ from .views import (  # get_notifications, not used; get_inspection_notification
     get_upcoming_cars_by_guest,
     get_user_cars,
     get_user_count,
+    google_register_login,
     guest_add_car_details,
     guest_inspection_report_post,
     inspector_appointments,
@@ -375,7 +376,8 @@ urlpatterns = [
     path("get_car_for_inventory",get_car_for_inventory,name="get_car_for_inventory"),
     path("get_seller_sold_cars/",get_seller_sold_cars,name="get_seller_sold_cars"),
     path("get_guest_sold_cars/",get_guest_sold_cars,name="get_guest_sold_cars"),
-    path("dealer_latest_bid_on_car/<int:car_id>/<str:car_type>/",dealer_latest_bid_on_car,name="dealer_latest_bid_on_car")
+    path("dealer_latest_bid_on_car/<int:car_id>/<str:car_type>/",dealer_latest_bid_on_car,name="dealer_latest_bid_on_car"),
+    path("google_register_login/",google_register_login,name="google_register_login")
     # path("combined_appointments/",combined_appointments,name="combined_appointments")
     
     
