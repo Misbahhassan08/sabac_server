@@ -30,12 +30,15 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from sabac.firebase_utils import send_fcm_notification
+from sabac.notification_service import send_notification
 from testcase import merge_json, my_default_json
 
 from .models import (
     AssignSlot,
     Availability,
     Bidding,
+    DeviceDetail,
     DeviceToken,
     Guest,
     InspectionReport,
@@ -49,6 +52,7 @@ from .serializers import (
     AssignedSlotSerializer,
     AvailabilitySerializer,
     BiddingSerializer,
+    DeviceDetailSerializer,
     GuestSerializer,
     InspectionReportSerializer,
     NotificationSerializer,
@@ -401,6 +405,10 @@ def moved_to_inventory(request, car_id):
     car.status = 'in_inventory'
     car.save()
     
+    dealer_title = "Inventory Updated"
+    dealer_body = f"{car.car_name} {car.car_variant} {car.year} moved to inventory"
+    send_notification(dealer_title , dealer_body , role="dealer")
+    
     serializer = SalerCarDetailsSerializer(car)
     return Response({
         "message" : "move to inventory successfully",
@@ -420,6 +428,10 @@ def moved_to_inventory_guest_car(request, car_id):
     
     car.status = 'in_inventory'
     car.save()
+    
+    dealer_title = "Inventory Updated"
+    dealer_body = f"{car.car_name} {car.car_variant} {car.year} moved to inventory"
+    send_notification(dealer_title , dealer_body , role="dealer")
     
     serializer = GuestSerializer(car)
     return Response({
@@ -911,6 +923,13 @@ def approve_inspection(request, report_id):
             category="car_approved",
             saler_car=report.saler_car,
         )
+        # === PUSH NOTIFICATION === 
+        dealer_title = "Car is Now Live for Bidding!"
+        dealer_body = (
+            f"The car {report.saler_car.car_name} {report.saler_car.car_variant} "
+            f"({report.saler_car.year}) is now live for bidding. Place your bids before the auction ends!"
+        )
+        send_notification(dealer_title, dealer_body, role="dealer")
 
         # Notify All Dealers
         dealers = User.objects.filter(role="dealer")
@@ -1305,7 +1324,7 @@ def sell_guest_car_to_dealer(request , dealer_id,car_id):
 # list of inspectors
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def inspectorsList(request):
+def inspectorsList(request): 
     try:
         if not request.user.is_authenticated:
             return Response(
@@ -1593,6 +1612,28 @@ def accept_bid(request, bid_id):
             category="car_sold",
             saler_car=car,
         )
+    
+    # === PUSH NOTIFICATION FOR WINNER DEALER ===
+    
+    # ---car detail---
+    car_info = (
+        f"{bid.saler_car.company} {bid.saler_car.car_name} {bid.saler_car.car_variant}" if bid.saler_car else
+        f"{bid.guest_car.company} {bid.guest_car.car_name} {bid.guest_car.car_variant}")
+    # message for dealer
+    message = f"You just won {car_info} with your bid of {bid.bid_amount}. Congratulations on the successful deal!"
+    
+    send_notification(title="You Got the Car!", body=message, user=bid.dealer)
+    
+    # ===notify other dealers===
+    message = (
+        f"{car_info} has been sold to {bid.dealer.first_name} {bid.dealer.last_name} "
+        f"for {bid.bid_amount}. Stay tuned for more opportunities!"
+    )    
+    remaining_dealers = User.objects.filter(role="dealer").exclude(id=bid.dealer.id)
+    
+    for dealer in remaining_dealers:
+        send_notification(title="Car Sold" , body=message, user=dealer)
+    
 
     return Response(
         {"message": "Bid accepted and car marked as sold"},
@@ -2082,8 +2123,12 @@ def add_car_details(request):
 
             inspection_date = car_details.inspection_date
             inspection_time = car_details.inspection_time
-
-            inspectors = User.objects.filter(role="inspector")
+            
+            inspector_ids = request.data.get("inspector")   # can be int or list
+            if isinstance(inspector_ids, list):
+                inspectors = User.objects.filter(id__in=inspector_ids, role="inspector")
+            else:
+                inspectors = User.objects.filter(id=inspector_ids, role="inspector")
 
             for inspector in inspectors:
                 message = (
@@ -2101,6 +2146,38 @@ def add_car_details(request):
                     message=message,
                     category="saler_car_details",
                 )
+                
+                
+            # === ROLE based push notification ====
+            admin_title = "New Car Alert"
+            admin_body = f"A new car ({car_details.car_name} - {car_details.year}) was added by {user.username}."
+            send_notification(admin_title, admin_body, role="admin")
+            
+            # inspector 
+            for inspector in inspectors:
+                body = (
+                    f"You are assigned to inspect {car_details.car_name} ({car_details.year}). "
+                    f"Seller: {user.username}, Phone: {saler_phone_number}. "
+                )
+                if inspection_date and inspection_time:
+                    body += f"Inspection scheduled on {inspection_date} at {inspection_time}."
+                else:
+                    body += "No inspection appointment set."
+
+                send_notification(
+                    title="🛠️ New Inspection Assigned",
+                    body=body,
+                    user=inspector  # direct push to this inspector
+                    
+                )
+            
+            
+            # dealer
+            admin_title = "Upcoming Alert"
+            admin_body = f"A new car ({car_details.car_name} - {car_details.year}) was added by {user.username}."
+            send_notification(admin_title, admin_body, role="dealer")       
+                
+                
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -3327,6 +3404,15 @@ def post_inspection_report_mob(request):
             category="admin_car_inspected",
             saler_car=car,
         )
+        
+        
+                    # === ROLE based push notification ====
+        
+        
+        
+        admin_title = "Approval Alert"
+        admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
+        send_notification(admin_title, admin_body, role="admin")
         return Response(
             {
                 "message": "Inspection report submitted successfully.",
@@ -4122,14 +4208,21 @@ def place_bid(request):
             dealer=user, guest_car=guest_car, bid_amount=bid_amount
         )
 
-    # Notify admins
+    # === Notify admins ===
     User = get_user_model()
     admin_users = User.objects.filter(role="admin")
     for admin in admin_users:
-        if saler_car:
-            message = f"A new bid of {bid_amount} has been placed on {saler_car.company} {saler_car.car_name} by dealer {bid.dealer.first_name}"
-        else:
-            message = f"A new bid of {bid_amount} has been placed on {guest_car.company} {guest_car.car_name} by dealer {bid.dealer.first_name}"
+        
+        # ===car detail ===
+        car_info = f"{saler_car.company} {saler_car.car_name} {saler_car.car_variant}" if saler_car else f"{guest_car.company} {guest_car.car_name} {guest_car.car_variant}"
+        
+        # sample message
+        message = f"New Bid placed of {bid_amount} is placed on {car_info} by {bid.dealer.first_name} {bid.dealer.last_name}"
+        
+        # if saler_car:
+        #     message = f"A new bid of {bid_amount} has been placed on {saler_car.company} {saler_car.car_name} by dealer {bid.dealer.first_name}"
+        # else:
+        #     message = f"A new bid of {bid_amount} has been placed on {guest_car.company} {guest_car.car_name} by dealer {bid.dealer.first_name}"
 
         Notification.objects.create(
             recipient=admin,
@@ -4139,6 +4232,48 @@ def place_bid(request):
             category="new_bid",
             bid=bid,
         )
+        # === PUSH NOTIFICATION FOR ADMIN ===
+        send_notification(title="Bid Alert", body = message , user=admin)
+        
+        # === Notify the dealers about cempetative bid ===
+        if saler_car:
+            prev_bidders = Bidding.objects.filter(
+                saler_car=saler_car
+                ).exclude(dealer=user).values_list("dealer_id",flat=True).distinct()
+        else:
+            prev_bidders = Bidding.objects.filter(
+                saler_car=saler_car
+                ).exclude(dealer=user).values_list("dealer_id",flat=True).distinct()
+            
+        for dealer_id in prev_bidders:
+            dealer_user = User.objects.get(id=dealer_id)
+            # ===car details ===
+            car_info = (
+                f"{saler_car.company} {saler_car.car_name} {saler_car.car_variant}"
+                if saler_car else
+                f"{guest_car.company} {guest_car.car_name} {guest_car.car_variant}"
+                )
+            
+            dealer_message = (
+                f"Bid placed of {bid_amount} on {car_info} by "
+                f"{bid.dealer.first_name} {bid.dealer.last_name}. Stay competative"
+                )
+            
+            Notification.objects.create(
+            recipient=dealer_user,
+            message=dealer_message,
+            saler_car=saler_car,
+            guest_car=guest_car,
+            category="competative_bid",
+            bid=bid,
+        )
+            # === push notification for competetion ===
+            send_notification(
+                title="Competing Bid Alert",
+                body=dealer_message,
+                user=dealer_user
+            )
+
 
     serializer = BiddingSerializer(bid)
     return Response(
@@ -4642,6 +4777,12 @@ def post_guest_inspection_report_mob(request):
                 guest_car=car,
             )
 
+        admin_title = "Approval Alert"
+        admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
+        send_notification(admin_title, admin_body, role="admin")
+
+
+
         return Response(
             {
                 "message": "Guest car inspection report submitted successfully.",
@@ -4758,6 +4899,9 @@ def get_bidding_cars_by_guest(request):
 @permission_classes([IsAuthenticated])
 def approve_guest_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
+    
+    print("DEBUG guest_car:", report.guest_car)
+    print("DEBUG status:", getattr(report.guest_car, "status", None))
 
     if report.guest_car and report.guest_car.status == "await_approval":
         car = report.guest_car
@@ -4773,6 +4917,13 @@ def approve_guest_inspection(request, report_id):
                 category="dealer_guest_car_approved",
                 guest_car=report.guest_car,
             )
+            # === PUSH NOTIFICATION === 
+        dealer_title = "Car is Now Live for Bidding!"
+        dealer_body = (
+            f"The car {report.guest_car.car_name} {report.guest_car.car_variant} "
+            f"({report.guest_car.year}) is now live for bidding. Place your bids before the auction ends!"
+        )
+        send_notification(dealer_title, dealer_body, role="dealer")
 
         return Response(
             {"message": "Guest car approved and moved to bidding"},
@@ -5588,3 +5739,30 @@ def update_image(request):
 #         )
 
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# //////////////////////////////////////////////////////////////////////////////////
+# PUSH NOTIFICATION SETUP
+@api_view(["POST"])
+def post_device_detail(request):
+    user_id = request.data.get("user_id")
+    role = request.data.get("role")
+    device_token = request.data.get("device_token")
+
+    if not user_id or not role or not device_token:
+        return Response({"error": "user_id, role and device_token are required"}, status=400)
+
+    # get user
+    user = get_object_or_404(User, id=user_id)
+
+    # save or update
+    device_detail, created = DeviceDetail.objects.update_or_create(
+        user=user,
+        device_token=device_token,
+        defaults={"role": role},
+    )
+
+    if created:
+        message = "Device registered successfully"
+    else:
+        message = "Device updated successfully"
+
+    return Response({"message": message}, status=status.HTTP_201_CREATED)

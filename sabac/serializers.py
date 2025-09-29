@@ -12,6 +12,7 @@ from .models import (
     AssignSlot,
     Availability,
     Bidding,
+    DeviceDetail,
     DeviceToken,
     Guest,
     InspectionReport,
@@ -395,3 +396,9 @@ class CarListingSerializer(serializers.ModelSerializer):
     total_cars_today = serializers.IntegerField()
     total_cars_this_week = serializers.IntegerField()
     total_cars_this_month = serializers.IntegerField()
+    
+    
+class DeviceDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceDetail
+        fields = "__all__"

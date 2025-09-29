@@ -6,6 +6,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
+from sabac.notification_service import send_notification
+
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -51,7 +53,7 @@ class saler_car_details(models.Model):
         ("pending", "Pending"),
         ("assigned", "Assigned"),
         ("in_inspection", "In Inspection"),
-        ("await_approval", " Awating Approval"),
+        ("await_approval", "Awaiting Approval"),
         ("rejected", "Rejected"),
         ("bidding", "In Bidding"),
         ("expired", "Expired"),
@@ -122,6 +124,7 @@ class saler_car_details(models.Model):
     
     def save(self, *args, **kwargs):
         now_time = timezone.now()
+        was_expired = self.status == "expired"
 
         # Mark sold
         if self.status == "sold":
@@ -137,6 +140,69 @@ class saler_car_details(models.Model):
             self.status = "expired"
 
         super().save(*args, **kwargs)
+        
+        # == send notofocation only when newly expires
+        if self.status == "expired" and not was_expired:
+            car_info = f"{self.company} {self.car_name} {self.car_variant}"
+            
+            # ====notify Owner=====
+            # if self.user:
+            #     message = f"Your {car_info} has been expired"
+                
+            #     Notification.objects.create(
+            #     recipient=self.user,
+            #     message=message,
+            #     saler_car=self,
+            #     category="seller_car_expired",
+            # )
+            # send_notification(
+            #     title="Car Expired",
+            #     body=message,
+            #     user=self.user,
+            # )
+            
+            # geting user model
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            # ===Notify dealers===
+            dealers = User.objects.filter(role="dealer")
+            
+            # sample message for dealer
+            message = f"The bidding period of {car_info} has been ended."
+            
+            for dealer in dealers:
+                Notification.objects.create(
+                    recipient=dealer,
+                    message = message,
+                    saler_car = self,
+                    category="dealer_car_expied"
+                )
+            # ===push notification Dealer ===
+                send_notification(title="Car Expired" , body=message , user=dealer)
+            
+            # ===notifiy Admin===
+            
+            # --get all admins from model--
+            admins = User.objects.filter(role="admin")
+            
+            # ---sample message--
+            message = f"{car_info} has been expired. No winning Bid"
+            
+            for admin in admins:
+                Notification.objects.create(
+                    recipient = admin,
+                    message = message,
+                    saler_car= self,
+                    category = "admin_car_expired" 
+                )
+                send_notification(title="Car Expired", body=message, user=admin)
+            
+                
+                
+            
+            
+    
 
 
 
@@ -211,6 +277,8 @@ class Guest(models.Model):
 
     def save(self, *args, **kwargs):
         now_time = timezone.now()
+        was_expired = self.status == "expired"
+        
 
         # Mark sold
         if self.status == "sold":
@@ -226,6 +294,62 @@ class Guest(models.Model):
             self.status = "expired"
 
         super().save(*args, **kwargs)
+        
+        if self.status == "expired" and not was_expired:
+            car_info = f"{self.company} {self.car_name} {self.car_variant}"
+            
+            # ====notify Owner=====
+            # if self.user:
+            #     message = f"Your {car_info} has been expired"
+                
+            #     Notification.objects.create(
+            #     recipient=self.user,
+            #     message=message,
+            #     saler_car=self,
+            #     category="seller_car_expired",
+            # )
+            # send_notification(
+            #     title="Car Expired",
+            #     body=message,
+            #     user=self.user,
+            # )
+            
+            # geting user model
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            # ===Notify dealers===
+            dealers = User.objects.filter(role="dealer")
+            
+            # sample message for dealer
+            message = f"The bidding period of {car_info} has been ended."
+            
+            for dealer in dealers:
+                Notification.objects.create(
+                    recipient=dealer,
+                    message = message,
+                    saler_car = self,
+                    category="dealer_car_expied"
+                )
+            # ===push notification Dealer ===
+                send_notification(title="Car Expired" , body=message , user=dealer)
+            
+            # ===notifiy Admin===
+            
+            # --get all admins from model--
+            admins = User.objects.filter(role="admin")
+            
+            # ---sample message--
+            message = f"{car_info} has been expired. No winning Bid"
+            
+            for admin in admins:
+                Notification.objects.create(
+                    recipient = admin,
+                    message = message,
+                    saler_car= self,
+                    category = "admin_car_expired" 
+                )
+                send_notification(title="Car Expired", body=message, user=admin)
     
     
     
@@ -484,3 +608,12 @@ class DeviceToken(models.Model):
     device_id = models.CharField(max_length=300)
     token = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+class DeviceDetail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  
+    role = models.CharField(max_length=20 , null=True , blank=True)
+    device_token = models.CharField(max_length=255, null=True , blank=True)
+  
+  
