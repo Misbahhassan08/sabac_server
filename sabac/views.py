@@ -359,10 +359,11 @@ def logout(request):
     try:
         refresh_token = request.data.get("refresh_token")
         device_id = request.data.get("device_id")
+        device_token = request.data.get("device_token")
 
-        if not refresh_token or not device_id:
+        if not refresh_token or not device_id or not device_token:
             return Response(
-                {"success": False, "error": "refresh_token and device_id are required"},
+                {"success": False, "error": "refresh_token , device_id and device token are required"},
                 status=400,
             )
 
@@ -373,6 +374,9 @@ def logout(request):
             return Response({"success": False, "error": "Invalid token"}, status=400)
 
         DeviceToken.objects.filter(user=request.user, device_id=device_id).delete()
+        
+        DeviceDetail.objects.filter(User=request.user,device_token=device_token).delete()
+        
 
         response = Response({"success": True, "message": "Logged out successfully"})
         response.delete_cookie("access_token")
