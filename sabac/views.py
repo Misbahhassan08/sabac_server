@@ -370,12 +370,12 @@ def logout(request):
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()
-        except Exception:
-            return Response({"success": False, "error": "Invalid token"}, status=400)
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=400)
 
         DeviceToken.objects.filter(user=request.user, device_id=device_id).delete()
         
-        DeviceDetail.objects.filter(User=request.user,device_token=device_token).delete()
+        DeviceDetail.objects.filter(user=request.user,device_token=device_token).delete()
         
 
         response = Response({"success": True, "message": "Logged out successfully"})

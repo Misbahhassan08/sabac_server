@@ -1,4 +1,5 @@
 import json
+import os
 
 import google.auth.transport.requests
 import requests
@@ -8,10 +9,15 @@ from google.oauth2 import service_account
 SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 
 # Load credentials once
-credentials = service_account.Credentials.from_service_account_file(
-    settings.SERVICE_ACCOUNT_FILE, scopes=SCOPES
-)
+# credentials = service_account.Credentials.from_service_account_file(
+#     settings.SERVICE_ACCOUNT_FILE, scopes=SCOPES
+# )
 # 
+
+# Load credentials once using the path from .env
+credentials = service_account.Credentials.from_service_account_file(
+    os.getenv("GOOGLE_APPLICATION_CREDENTIALS"), scopes=SCOPES
+)
 
 def send_fcm_notification(device_token, role, title, body):
     """Send push notification via Firebase Cloud Messaging"""
