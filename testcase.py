@@ -9,7 +9,7 @@ my_default_json = {
             "carName": "",
             "carVariant":"",
             "company": "",
-            "registeredYear":"",
+            # "registeredYear":"",
             
         },
         "techSpecs": {
@@ -19,15 +19,15 @@ my_default_json = {
             "fuelType": "",
             "kmsDriven": "",
             "variant": "",
-            "inspectionDate":"",
-            "chassesNumber":"",
-            "engineNumber":"",
-            "regNo":"",
-            "registeredIn":"",
-            "auctionSheet":""
+            # "inspectionDate":"",
+            # "chassesNumber":"",
+            # "engineNumber":"",
+            # "regNo":"",
+            # "registeredIn":"",
+            # "auctionSheet":""
         },
 
-        "Body Parts Inspection": {
+        "bodyParts": {
             "Car Body (Outer)": {
                 "Radiator Core Support": {
                     "Condition": {"Ok": 0, "Hit Impact": 1},
