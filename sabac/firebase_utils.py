@@ -15,7 +15,12 @@ SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 # 
 
 # Load credentials once using the path from .env
-credentials = service_account.Credentials.from_service_account_file(
+# credentials = service_account.Credentials.from_service_account_file(
+#     os.getenv("GOOGLE_APPLICATION_CREDENTIALS"), scopes=SCOPES
+# )
+
+
+credentials = service_account.Credentials.from_service_account_info(
     os.getenv("GOOGLE_APPLICATION_CREDENTIALS"), scopes=SCOPES
 )
 
