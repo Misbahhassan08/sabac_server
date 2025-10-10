@@ -14,15 +14,20 @@ SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 # )
 # 
 
+#////////////FOR LOCAL TESTING //////////// 
 # Load credentials once using the path from .env
 # credentials = service_account.Credentials.from_service_account_file(
 #     os.getenv("GOOGLE_APPLICATION_CREDENTIALS"), scopes=SCOPES
 # )
 
 
+
+# ////////////FOR CLOUD TESTING//////////////////
 credentials = service_account.Credentials.from_service_account_info(
     json.loads(os.getenv("GOOGLE_APPLICATION_CREDENTIALS")), scopes=SCOPES
 )
+
+
 
 def send_fcm_notification(device_token, role, title, body):
     """Send push notification via Firebase Cloud Messaging"""

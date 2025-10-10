@@ -458,6 +458,8 @@ def update_default_end_time_bidding_seller_car(request, car_id):
     minutes = int(request.data.get("minutes", 0))
     seconds = int(request.data.get("seconds", 0))
     
+    print(days,":",hours,":", minutes,":", seconds)
+    
     # pak time zone
     pk_timezone = pytz.timezone("Asia/Karachi")
 
@@ -466,7 +468,7 @@ def update_default_end_time_bidding_seller_car(request, car_id):
 
     car.bidding_start_time = start_time_utc
     car.bidding_end_time = end_time_utc
-    car.status = "bidding"
+    # car.status = "bidding"
     car.save()
 
     start_time_local = start_time_utc.astimezone(pk_timezone)
@@ -910,54 +912,201 @@ def get_cars_for_approval(request):
 
 
 # //////////ADMIN ACCEPT THE CAR INSPECTION REPORT OF SELLER///////
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def approve_inspection(request, report_id):
+#     report = get_object_or_404(InspectionReport, id=report_id)
+
+#     if report.saler_car and report.saler_car.status == "await_approval":
+#         car = report.saler_car
+#         report.saler_car.status = "bidding"
+#         report.saler_car.save()
+
+#         # notification for seller
+#         Notification.objects.create(
+#             recipient=report.saler_car.user,
+#             message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been approved for bidding.",
+#             category="car_approved",
+#             saler_car=report.saler_car,
+#         )
+#         # === PUSH NOTIFICATION === 
+#         dealer_title = "Car is Now Live for Bidding!"
+#         dealer_body = (
+#             f"The car {report.saler_car.car_name} {report.saler_car.car_variant} "
+#             f"({report.saler_car.year}) is now live for bidding. Place your bids before the auction ends!"
+#         )
+#         send_notification(dealer_title, dealer_body, role="dealer")
+
+#         # Notify All Dealers
+#         dealers = User.objects.filter(role="dealer")
+#         for dealer in dealers:
+#             Notification.objects.create(
+#                 recipient=dealer,
+#                 message=f"A new car '{report.saler_car.car_name} ({report.saler_car.year})' is now available for bidding.",
+#                 category="dealer_new_bid_car",
+#                 saler_car=report.saler_car,
+#             )
+
+#         return Response(
+#             {"message": "Seller car approved and moved to bidding"},
+#             status=status.HTTP_200_OK,
+#         )
+
+#     return Response(
+#         {
+#             "message": "Seller car is not in await_approval status or not linked properly"
+#         },
+#         status=status.HTTP_400_BAD_REQUEST,
+#     )
+    
+    
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def approve_inspection(request, report_id):
+
     report = get_object_or_404(InspectionReport, id=report_id)
 
+    if not report.saler_car:
+        return Response(
+            {"error": "Inspection report is not linked to any seller car."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+        
+    if report.saler_car.status != "await_approval":
+        return Response(
+                {"error": f"Car is currently in '{report.saler_car.status}' status, not 'await_approval'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
     if report.saler_car and report.saler_car.status == "await_approval":
+        
         car = report.saler_car
-        report.saler_car.status = "bidding"
-        report.saler_car.save()
+        # === Update car status ===
+        car.status = "bidding"
+        car.save(update_fields=["status"])
 
-        # notification for seller
+
+        # === Notify Seller ===
         Notification.objects.create(
-            recipient=report.saler_car.user,
-            message=f"Your car '{report.saler_car.car_name} ({report.saler_car.year})' has been approved for bidding.",
+            recipient=car.user,
+            message=f"Your car '{car.car_name} ({car.year})' has been approved for bidding.",
             category="car_approved",
-            saler_car=report.saler_car,
+            saler_car=car,
         )
-        # === PUSH NOTIFICATION === 
-        dealer_title = "Car is Now Live for Bidding!"
-        dealer_body = (
-            f"The car {report.saler_car.car_name} {report.saler_car.car_variant} "
-            f"({report.saler_car.year}) is now live for bidding. Place your bids before the auction ends!"
-        )
-        send_notification(dealer_title, dealer_body, role="dealer")
+        
 
-        # Notify All Dealers
+        # === Push notification for all Dealers ===
         dealers = User.objects.filter(role="dealer")
         for dealer in dealers:
+            
+            # In-app notification for each dealer
             Notification.objects.create(
                 recipient=dealer,
-                message=f"A new car '{report.saler_car.car_name} ({report.saler_car.year})' is now available for bidding.",
+                message=f"A new car '{car.car_name} ({car.year})' is now available for bidding.",
                 category="dealer_new_bid_car",
-                saler_car=report.saler_car,
+                saler_car=car,
             )
 
+            # Push notification for each dealer
+            dealer_title = "Car is Now Live for Bidding!"
+            dealer_body = (
+                f"The car {car.car_name} {car.car_variant} "
+                f"({car.year}) is now live for bidding. Place your bids before the auction ends!"
+            )
+            send_notification(dealer_title, dealer_body, user=dealer)
+
+
+        # === Optional Admin Push ===
+        # admin_title = "Car Approved for Bidding"
+        # admin_body = f"The car ({car.car_name} - {car.car_variant} - {car.year}) has been approved and is now open for bidding."
+        # send_notification(admin_title, admin_body, role="admin")
+
         return Response(
-            {"message": "Seller car approved and moved to bidding"},
+            {"message": "Seller car approved and moved to bidding."},
             status=status.HTTP_200_OK,
         )
-
+        
+    # If not linked or incorrect status
     return Response(
         {
-            "message": "Seller car is not in await_approval status or not linked properly"
+            "message": "Seller car is not in 'await_approval' status or not linked properly."
         },
         status=status.HTTP_400_BAD_REQUEST,
     )
-    
-    
+
+
+# @api_view(["POST"])
+# @permission_classes([IsAuthenticated])
+# def approve_inspection(request, report_id):
+#     # Fetch the inspection report
+#     report = get_object_or_404(InspectionReport, id=report_id)
+
+#     # Ensure car is linked with report
+#     if not report.saler_car:
+#         return Response(
+#             {"message": "No car linked with this inspection report."},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+#     car = report.saler_car
+
+#     # Debug log (can be removed in production)
+#     print(f"Approving inspection for car ID: {car.saler_car_id}, status: {car.status}")
+
+#     # Ensure car is waiting for approval
+#     if car.status != "await_approval":
+#         return Response(
+#             {"message": f"Car is not in 'await_approval' status. Current: {car.status}"},
+#             status=status.HTTP_400_BAD_REQUEST,
+#         )
+
+#     # === Update car status ===
+#     car.status = "bidding"
+#     car.save(update_fields=["status"])
+
+#     # === Notify Seller ===
+#     Notification.objects.create(
+#         recipient=car.user,
+#         message=f"Your car '{car.car_name} ({car.year})' has been approved for bidding.",
+#         category="car_approved",
+#         saler_car=car,
+#     )
+
+#     # === Notify all Dealers (in-app + push) ===
+#     dealers = User.objects.filter(role="dealer")
+
+#     for dealer in dealers:
+#         # In-app notification
+#         Notification.objects.create(
+#             recipient=dealer,
+#             message=f"A new car '{car.car_name} ({car.year})' is now available for bidding.",
+#             category="dealer_new_bid_car",
+#             saler_car=car,
+#         )
+
+#         # Push notification (if dealer has device tokens)
+#         dealer_title = "Car is Now Live for Bidding!"
+#         dealer_body = (
+#             f"The car {car.car_name} {car.car_variant} "
+#             f"({car.year}) is now live for bidding. Place your bids before the auction ends!"
+#         )
+#         send_notification(dealer_title, dealer_body, user=dealer)
+
+#     # === Optional Admin Push (if you want admins to be notified) ===
+#     admin_title = "Car Approved for Bidding"
+#     admin_body = f"The car ({car.car_name} - {car.car_variant} - {car.year}) has been approved and is now open for bidding."
+#     send_notification(admin_title, admin_body, role="admin")
+
+#     # === Success Response ===
+#     return Response(
+#         {
+#             "message": "Seller car approved successfully and moved to bidding.",
+#             "car_id": car.saler_car_id,
+#             "status": car.status,
+#         },
+#         status=status.HTTP_200_OK,
+#     )
+
 # ///////////set minimum bid for seller car///////
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
@@ -3390,6 +3539,11 @@ def post_inspection_report_mob(request):
     serializer = InspectionReportSerializer(data=serializer_data)
     if serializer.is_valid():
         report = serializer.save(inspector=user, saler_car=car)
+        
+        car.status= "await_approval"
+        car.save(update_fields=["status"])
+        
+        
         Notification.objects.create(
             recipient=car.user,
             message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
@@ -3412,6 +3566,7 @@ def post_inspection_report_mob(request):
         
                     # === ROLE based push notification ====
         
+
         
         
         admin_title = "Approval Alert"

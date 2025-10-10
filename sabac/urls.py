@@ -303,7 +303,7 @@ urlpatterns = [
     # admin delete other user
     path("delete_user/", delete_user, name="delete_user"),
     path("edit_user/", edit_user, name="edit_user"),  # admin edit user
-    path("approve_inspection/<int:report_id>", approve_inspection,
+    path("approve_inspection/<int:report_id>/", approve_inspection,
          name="approve_inspection"),  # admin inspection approving url
     path("reject_inspection/<int:report_id>", reject_inspection,
          name="reject_inspection"),  # admin reject inspection
