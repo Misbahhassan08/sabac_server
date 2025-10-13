@@ -22,7 +22,7 @@ SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
 
 
 
-# ////////////FOR CLOUD TESTING//////////////////
+# ////////////FOR CLOUD//////////////////
 credentials = service_account.Credentials.from_service_account_info(
     json.loads(os.getenv("GOOGLE_APPLICATION_CREDENTIALS")), scopes=SCOPES
 )

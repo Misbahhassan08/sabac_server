@@ -3541,7 +3541,8 @@ def post_inspection_report_mob(request):
         report = serializer.save(inspector=user, saler_car=car)
         
         car.status= "await_approval"
-        car.save(update_fields=["status"])
+        car.is_inspected = True
+        car.save(update_fields=["status", "is_inspected"])
         
         
         Notification.objects.create(
