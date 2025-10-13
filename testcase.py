@@ -30,351 +30,351 @@ my_default_json = {
         "bodyParts": {
             "Car Body (Outer)": {
                 "Radiator Core Support": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Right Strut Tower": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Left Strut Tower": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Right Front Rail": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Left Front Rail": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Cowl Panel Firewall": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1}
+                    "Condition": {"Ok": 0, "Hit Impact": 0}
                 },
                 "Front Bumper": {
-                    "Condition": {"Ok": 0, "Repaint": 1}
+                    "Condition": {"Ok": 0, "Repaint": 0}
                 },
                 "Bonnet": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0},
                     "img_urls": [""]
                 },
                 "Front Right Fender": {
-                    "Paint": {"Original": 0, "Repainted": 1}
+                    "Paint": {"Original": 0, "Repainted": 0}
                 },
                 "Front Windscreen": {
-                    "Condition": {"Ok": 0, "Scratch": 1, "Chip": 1, "Crack": 1}
+                    "Condition": {"Ok": 0, "Scratch": 0, "Chip": 0, "Crack": 0}
                 },
                 "Right Mirror": {
-                    "Condition": {"Ok": 0, "Not Rotating": 1, "Broken": 1},
+                    "Condition": {"Ok": 0, "Not Rotating": 0, "Broken": 0},
                     "img_urls": [""]
                 },
                 "Front Right Door": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0},
                     "img_urls": [""]
                 },
                 "Foot Board (Right)": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0},
                     "img_urls": [""]
                 },
                 "Right A Pillar": {
-                    "Condition": {"Ok": 0, "Repaired": 1},
+                    "Condition": {"Ok": 0, "Repaired": 0},
                     "img_urls": [""]
                 },
                 "Rear Right Door": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0},
                     "img_urls": [""]
                 },
                 "Right B Pillar": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0},
                     "img_urls": [""]
                 },
                 "Rear Right Fender": {
-                    "Condition": {"Ok": 0, "Repainted": 1},
+                    "Condition": {"Ok": 0, "Repainted": 0},
                     "img_urls": [""]
                 },
                 "Right C Pillar": {
-                    "Paint": {"Original": 0, "Repainted": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
                     "img_urls": [""]
                 },
                 "Right D Pillar": {
-                    "Paint": {"Original": 0, "Repainted": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
                     "img_urls": [""]
                 },
                 "Back Windscreen": {
-                    "Condition": {"Ok": 0, "Scratch": 1, "Crack": 1},
+                    "Condition": {"Ok": 0, "Scratch": 0, "Crack": 0},
                     "img_urls": [""]
                 },
                 "Trunk": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1}
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Tool Kit / Spare Tyre": {
-                    "Condition": {"Complete": 0, "Incomplete": 1, "Not Applicable": 0},
+                    "Condition": {"Complete": 0, "Incomplete": 0, "Not Applicable": 0},
                     "img_urls": [""]
                 },
                 "Boot Floor": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Boot Lock Pillar": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1}
+                    "Condition": {"Ok": 0, "Hit Impact": 0}
                 },
                 "Rear Sub Frame": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Left D Pillar": {
-                    "Condition": {"Not Applicable": 0, "Ok": 0, "Repair": 1},
+                    "Condition": {"Not Applicable": 0, "Ok": 0, "Repair": 0},
                     "img_urls": [""]
                 },
                 "Left Rear Fender": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1}
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Left C Pillar": {
-                    "Condition": {"Ok": 0, "Repaired": 1},
+                    "Condition": {"Ok": 0, "Repaired": 0},
                     "img_urls": [""]
                 },
                 "Left Rear Door": {
-                    "Condition": {"Ok": 0, "Repainted": 1},
+                    "Condition": {"Ok": 0, "Repainted": 0},
                     "img_urls": [""]
                 },
                 "Foot Board (Left)": {
-                    "Condition": {"Ok": 0, "Repainted": 1},
+                    "Condition": {"Ok": 0, "Repainted": 0},
                     "img_urls": [""]
                 },
                 "Left B Pillar": {
-                    "Condition": {"Ok": 0, "Repair": 1},
+                    "Condition": {"Ok": 0, "Repair": 0},
                     "img_urls": [""]
                 },
                 "Left Front Door": {
-                    "Paint": {"Original": 0, "Repainted": 1},
-                    "Seals": {"Ok": 0, "Repaired": 1, "Damaged": 1},
+                    "Paint": {"Original": 0, "Repainted": 0},
+                    "Seals": {"Ok": 0, "Repaired": 0, "Damaged": 0},
                     "img_urls": [""]
                 },
                 "Left A Pillar": {
-                    "Condition": {"Ok": 0, "Repaired": 1},
+                    "Condition": {"Ok": 0, "Repaired": 0},
                     "img_urls": [""]
                 },
                 "Front Sub Frame": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1},
+                    "Condition": {"Ok": 0, "Hit Impact": 0},
                     "img_urls": [""]
                 },
                 "Roof": {
-                    "Condition": {"Ok": 0, "Repainted": 1}
+                    "Condition": {"Ok": 0, "Repainted": 0}
                 },
                 "Ladder Frame": {
-                    "Condition": {"Ok": 0, "Hit Impact": 1, "Not Applicable": 0},
+                    "Condition": {"Ok": 0, "Hit Impact": 0, "Not Applicable": 0},
                     "img_urls": [""]
                 }
             },
 
             "Engine/Transmission": {
                 "Engine Oil Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0}
                 },
                 "Transmission Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0}
                 },
                 "Coolant Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0}
                 },
                 "Brake Oil Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0}
                 },
                 "Power Steering Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0}
                 },
                 "4x4 Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1, "Not Available": 0}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0, "Not Available": 0}
                 },
                 "Differential Oil Leakage": {
-                    "Condition": {"No Leakage": 0, "Leakage": 1, "Seepage": 1, "Not Available": 0}
+                    "Condition": {"No Leakage": 0, "Leakage": 0, "Seepage": 0, "Not Available": 0}
                 },
                 "Fan Belts": {
-                    "Condition": {"Ok": 0, "Crack": 1}
+                    "Condition": {"Ok": 0, "Crack": 0}
                 },
                 "Wires/Wiring": {
-                    "Condition": {"Ok": 0, "Repaired": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Engine Blow Manual Check": {
-                    "Condition": {"Not Applicable": 0, "Ok": 0, "Engine Blow": 1}
+                    "Condition": {"Not Applicable": 0, "Ok": 0, "Engine Blow": 0}
                 },
                 "Engine Noise": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Engine Vibration": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Pulleys Adjuster Belts Noise": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Hoses": {
-                    "Condition": {"Normal": 0, "Leakage": 1}
+                    "Condition": {"Normal": 0, "Leakage": 0}
                 },
                 "Radiator": {
-                    "Condition": {"Normal": 0, "Leakage": 1, "Damaged": 1}
+                    "Condition": {"Normal": 0, "Leakage": 0, "Damaged": 0}
                 },
                 "Suction Fan": {
-                    "Condition": {"Working": 0, "Not Working": 1}
+                    "Condition": {"Working": 0, "Not Working": 0}
                 },
                 "Starter Operation": {
-                    "Condition": {"Ok": 0, "Long Starting": 1}
+                    "Condition": {"Ok": 0, "Long Starting": 0}
                 },
                 "Exhaust Sound": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 }
             },
 
             "Interior": {
                 "Steering Wheel": {
-                    "Condition": {"Ok": 0, "Scratch": 1, "Fade": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Scratch": 0, "Fade": 0, "Damaged": 0}
                 },
                 "Steering Button": {
-                    "Condition": {"Not Applicable": 0, "Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Not Applicable": 0, "Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Dash Board": {
-                    "Condition": {"Ok": 0, "Scratch": 1, "Damaged": 1, "Fade": 1}
+                    "Condition": {"Ok": 0, "Scratch": 0, "Damaged": 0, "Fade": 0}
                 },
                 "Glove Box": {
-                    "Condition": {"Ok": 0, "Not Working": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Not Working": 0, "Damaged": 0}
                 },
                 "Horn": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Wiper/Washer Speed": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Rear View Mirror Dimmer": {
-                    "Condition": {"Ok": 0, "Not Showing Reflection": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Not Showing Reflection": 0, "Damaged": 0}
                 },
                 "Seat Controls": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "All Seats Covers": {
-                    "Condition": {"Ok": 0, "Damaged": 1, "After Market Installed": 1}
+                    "Condition": {"Ok": 0, "Damaged": 0, "After Market Installed": 0}
                 },
                 "All Seats Belts": {
-                    "Condition": {"Ok": 0, "Damaged": 1, "Not Working": 1}
+                    "Condition": {"Ok": 0, "Damaged": 0, "Not Working": 0}
                 },
                 "All Power Windows": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Auto Lock Button": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "All Interior Lighting": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "A/C": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Heater": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Rear Camera": {
-                    "Condition": {"Working": 0, "Not Working": 1, "Not Applicable": 0}
+                    "Condition": {"Working": 0, "Not Working": 0, "Not Applicable": 0}
                 },
                 "Roof Posish": {
-                    "Condition": {"Ok": 0, "Dirty": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Dirty": 0, "Damaged": 0}
                 },
                 "Floor Mat": {
-                    "Condition": {"Ok": 0, "Dirty": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Dirty": 0, "Damaged": 0}
                 },
                 "Sun Roof": {
-                    "Condition": {"Working": 0, "Not Working": 1, "Glass Damaged": 1, "Scratch": 1, "Not Applicable": 0}
+                    "Condition": {"Working": 0, "Not Working": 0, "Glass Damaged": 0, "Scratch": 0, "Not Applicable": 0}
                 },
                 "Computer Scanner Errors": {
-                    "Condition": {"No Error": 0, "Error": 1},
+                    "Condition": {"No Error": 0, "Error": 0},
                     "img_urls": [""]
                 }
             },
 
             "Exterior Lights": {
                 "Front Right Headlight": {
-                    "Condition": {"Ok": 0, "Foggy": 1, "Repaired": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Foggy": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Front Left Headlight": {
-                    "Condition": {"Ok": 0, "Foggy": 1, "Repaired": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Foggy": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Rear Right Tail Light": {
-                    "Condition": {"Ok": 0, "Foggy": 1, "Repaired": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Foggy": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Rear Left Tail Light": {
-                    "Condition": {"Ok": 0, "Foggy": 1, "Repaired": 1, "Damaged": 1}
+                    "Condition": {"Ok": 0, "Foggy": 0, "Repaired": 0, "Damaged": 0}
                 },
                 "Fog Light": {
-                    "Condition": {"Not Applicable": 0, "Ok": 0, "Not Working": 1}
+                    "Condition": {"Not Applicable": 0, "Ok": 0, "Not Working": 0}
                 }
             },
 
             "Brakes & Tyres": {
                 "Front Right Tyre": {
-                    "Remaining Thread": {"100%": 0, "75%": 1, "50%": 2, "25%": 3, "0%": 4},
-                    "Brake Pads": {"More than 50%": 0, "Less than 50%": 1}
+                    "Remaining Thread": {"000%": 0, "75%": 0, "50%": 0, "25%": 0, "0%": 0},
+                    "Brake Pads": {"More than 50%": 0, "Less than 50%": 0}
                 },
                 "Rear Right Tyre": {
-                    "Remaining Thread": {"100%": 0, "75%": 1, "50%": 2, "25%": 3, "0%": 4}
+                    "Remaining Thread": {"000%": 0, "75%": 0, "50%": 0, "25%": 0, "0%": 0}
                 },
                 "Rear Left Tyre": {
-                    "Remaining Thread": {"100%": 0, "75%": 1, "50%": 2, "25%": 3, "0%": 4}
+                    "Remaining Thread": {"000%": 0, "75%": 0, "50%": 0, "25%": 0, "0%": 0}
                 },
                 "Front Left Tyre": {
-                    "Remaining Thread": {"100%": 0, "75%": 1, "50%": 2, "25%": 3, "0%": 4}
+                    "Remaining Thread": {"000%": 0, "75%": 0, "50%": 0, "25%": 0, "0%": 0}
                 },
                 "Front Left Tyre Disc Pad": {
-                    "Remaining Thread": {"100%": 0, "75%": 1, "50%": 2, "25%": 3, "0%": 4},
-                    "Brake Pads": {"More than 50%": 0, "Less than 50%": 1}
+                    "Remaining Thread": {"000%": 0, "75%": 0, "50%": 0, "25%": 0, "0%": 0},
+                    "Brake Pads": {"More than 50%": 0, "Less than 50%": 0}
                 }
             },
 
             "Test Drive Remarks": {
                 "Engine Pick": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Gear Shifting": {
                     "Condition": {
                         "Normal": 0,
-                        "Jerk While Shifting": 1,
-                        "Delay in Shift": 1,
-                        "Problem in Shifting": 1
+                        "Jerk While Shifting": 0,
+                        "Delay in Shift": 0,
+                        "Problem in Shifting": 0
                     }
                 },
                 "Brake Response": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "ABS Operation": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1, "Not Available": 0}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0, "Not Available": 0}
                 },
                 "Front Suspension Noise": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Rear Suspension Noise": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Exhaust": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "A/C While Driving": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 },
                 "Speedometer and Other Gauges": {
-                    "Condition": {"Working Properly": 0, "Not Working Properly": 1}
+                    "Condition": {"Working Properly": 0, "Not Working Properly": 0}
                 },
                 "Wheel Alignment": {
-                    "Condition": {"Centred": 0, "Not Centred": 1}
+                    "Condition": {"Centred": 0, "Not Centred": 0}
                 },
                 "4x4": {
-                    "Condition": {"Engaging": 0, "Not Engaging": 1, "Not Available": 0}
+                    "Condition": {"Engaging": 0, "Not Engaging": 0, "Not Available": 0}
                 },
                 "Wheel Balancing": {
-                    "Condition": {"Normal": 0, "Abnormal": 1}
+                    "Condition": {"Normal": 0, "Abnormal": 0}
                 }
             }
         }
