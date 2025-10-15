@@ -3583,6 +3583,103 @@ def post_inspection_report_mob(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# @api_view(["PUT"])
+# @permission_classes([IsAuthenticated])
+# def update_inspection_report_mob(request, report_id):
+#     user = request.user
+#     if user.role != "inspector":
+#         return Response(
+#             {"message": "Only inspectors can update reports."},
+#             status=status.HTTP_403_FORBIDDEN,
+#         )
+
+#     try:
+#         report = InspectionReport.objects.get(id=report_id, inspector=user)
+#     except InspectionReport.DoesNotExist:
+#         return Response(
+#             {"message": "Inspection report not found."},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+
+#     data = request.data
+#     print("update data:", data)
+#     # saler_car_id = data.get("saler_car")
+
+#     # if not saler_car_id:
+#     #     return Response(
+#     #         {"message": "Missing 'saler_car' field in request."},
+#     #         status=status.HTTP_400_BAD_REQUEST,
+#     #     )
+
+#     # try:
+#     #     car = saler_car_details.objects.get(saler_car_id=saler_car_id)
+#     # except saler_car_details.DoesNotExist:
+#     #     return Response(
+#     #         {"message": "Car not found."},
+#     #         status=status.HTTP_404_NOT_FOUND,
+#     #     )
+
+#     car = report.saler_car
+
+#     json_obj = data.get("json_obj")
+#     mobile_data = {
+#         "basicInfo": json_obj.get("basicInfo", {}),
+#         "techSpecs": json_obj.get("techSpecs", {}),
+#         "bodyParts": json_obj.get("bodyParts", []),
+#         "comments": json_obj.get("comments","")
+#     }
+
+#     # Merge mobile data with default
+#     merge_result = merge_json(my_default_json, mobile_data)
+
+#     # Prepare data for update
+#     serializer_data = {**data, "json_obj": merge_result}
+
+#     serializer = InspectionReportSerializer(
+#         instance=report, data=serializer_data, partial=True
+#     )
+
+#     if serializer.is_valid():
+#         updated_report = serializer.save()
+
+#         # Send notifications
+#         try:
+#             Notification.objects.create(
+#                 recipient=car.user,
+#                 message=f"Your car '{car.car_name} ({car.year})' inspection report has been updated by {user.username}.",
+#                 category="inspection_updated",
+#                 saler_car=car,
+#             )
+
+#             for dealer in User.objects.filter(role="dealer"):
+#                 Notification.objects.create(
+#                     recipient=dealer,
+#                     message=f"Updated inspection report available for '{car.car_name}'.",
+#                     category="dealer_inspection_updated",
+#                     saler_car=car,
+#                 )
+
+#             for admin in User.objects.filter(role="admin"):
+#                 Notification.objects.create(
+#                     recipient=admin,
+#                     message=f"Inspection report updated for '{car.car_name}'.",
+#                     category="admin_inspection_updated",
+#                     saler_car=car,
+#                 )
+#         except Exception as e:
+#             logger.error(f"Notification error: {str(e)}")
+
+#         return Response(
+#             {
+#                 "message": "Inspection report updated successfully.",
+#                 "report": InspectionReportSerializer(updated_report).data,
+#             },
+#             status=status.HTTP_200_OK,
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(["PUT"])
 @permission_classes([IsAuthenticated])
 def update_inspection_report_mob(request, report_id):
@@ -3593,6 +3690,7 @@ def update_inspection_report_mob(request, report_id):
             status=status.HTTP_403_FORBIDDEN,
         )
 
+    # ✅ Fetch report
     try:
         report = InspectionReport.objects.get(id=report_id, inspector=user)
     except InspectionReport.DoesNotExist:
@@ -3601,38 +3699,25 @@ def update_inspection_report_mob(request, report_id):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+    car = report.saler_car
     data = request.data
     print("update data:", data)
-    # saler_car_id = data.get("saler_car")
 
-    # if not saler_car_id:
-    #     return Response(
-    #         {"message": "Missing 'saler_car' field in request."},
-    #         status=status.HTTP_400_BAD_REQUEST,
-    #     )
+    # ✅ Load existing report JSON (not the blank template!)
+    existing_json = report.json_obj or {}
 
-    # try:
-    #     car = saler_car_details.objects.get(saler_car_id=saler_car_id)
-    # except saler_car_details.DoesNotExist:
-    #     return Response(
-    #         {"message": "Car not found."},
-    #         status=status.HTTP_404_NOT_FOUND,
-    #     )
-
-    car = report.saler_car
-
-    json_obj = data.get("json_obj")
+    json_obj = data.get("json_obj", {})
     mobile_data = {
         "basicInfo": json_obj.get("basicInfo", {}),
         "techSpecs": json_obj.get("techSpecs", {}),
-        "bodyParts": json_obj.get("bodyParts", []),
-        "comments": json_obj.get("comments","")
+        "bodyParts": json_obj.get("bodyParts", {}),
+        "comments": json_obj.get("comments", "")
     }
 
-    # Merge mobile data with default
-    merge_result = merge_json(my_default_json, mobile_data)
+    # ✅ Merge new data into existing saved report
+    merge_result = merge_json(existing_json, mobile_data)
 
-    # Prepare data for update
+    # ✅ Prepare serializer data
     serializer_data = {**data, "json_obj": merge_result}
 
     serializer = InspectionReportSerializer(
@@ -3642,7 +3727,7 @@ def update_inspection_report_mob(request, report_id):
     if serializer.is_valid():
         updated_report = serializer.save()
 
-        # Send notifications
+        # ✅ Send notifications (safe block)
         try:
             Notification.objects.create(
                 recipient=car.user,
@@ -3678,6 +3763,8 @@ def update_inspection_report_mob(request, report_id):
         )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 # INSPECTOR MAKE SCHEDULE//////////////////

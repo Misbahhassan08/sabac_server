@@ -1077,6 +1077,74 @@ def merge_json(default_json, new_json):
     return merged_json
 
 
+
+# import copy
+
+
+# def merge_json(default_json, new_json):
+#     if not default_json:
+#         print("Warning: default_json is empty or None")
+#         return new_json or {}
+
+#     if not new_json:
+#         print("Warning: new_json is empty or None")
+#         return default_json
+
+#     merged_json = copy.deepcopy(default_json)
+
+#     def find_and_update(part_name, category, selected_option):
+#         """
+#         Search for part_name inside merged_json and update the correct field.
+#         """
+#         body_parts = merged_json.get("Car Detail", {}).get("bodyParts", {})
+
+#         for section_name, section_parts in body_parts.items():
+#             if part_name in section_parts:
+#                 part_info = section_parts[part_name]
+#                 if isinstance(part_info.get(category), dict):
+#                     # Reset all options to 0
+#                     for option in part_info[category]:
+#                         part_info[category][option] = 0
+#                     # Set selected option to 1 (if valid)
+#                     if selected_option in part_info[category]:
+#                         part_info[category][selected_option] = 1
+#                     else:
+#                         print(f"⚠️ Warning: Option '{selected_option}' not found in '{category}' for '{part_name}'")
+#                 else:
+#                     print(f"⚠️ Warning: Category '{category}' not found or invalid in '{part_name}'")
+#                 return True  # Found and processed
+#         print(f"⚠️ Warning: Part '{part_name}' not found in any section")
+#         return False
+
+#     # Merge bodyParts
+#     for part_name, part_values in new_json.get("bodyParts", {}).items():
+#         for category, selected_option in part_values.items():
+#             find_and_update(part_name, category, selected_option)
+
+#     # Merge basicInfo
+#     basic_info = merged_json.get("Car Detail", {}).get("basicInfo", {})
+#     for key, value in new_json.get("basicInfo", {}).items():
+#         if key in basic_info:
+#             basic_info[key] = value
+#         else:
+#             print(f"⚠️ Warning: Key '{key}' not found in 'basicInfo'")
+
+#     # Merge techSpecs
+#     tech_specs = merged_json.get("Car Detail", {}).get("techSpecs", {})
+#     for key, value in new_json.get("techSpecs", {}).items():
+#         if key in tech_specs:
+#             tech_specs[key] = value
+#         else:
+#             print(f"⚠️ Warning: Key '{key}' not found in 'techSpecs'")
+
+#     # Merge comments
+#     if "comments" in new_json:
+#         merged_json["Car Detail"]["comments"] = new_json["comments"]
+
+#     return merged_json
+
+
+
 # Merging
 # merged_result = merge_json(my_default_json, sample_json)
 
