@@ -37,8 +37,8 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app","https://sabac-webapp-382170497486.us-central1.run.app"]
-CSRF_TRUSTED_ORIGINS = ["https://*"]
+ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app"]
+CSRF_TRUSTED_ORIGINS = ["https://*","https://sabac-webapp-382170497486.us-central1.run.app"]
 
 
 # Application definition
