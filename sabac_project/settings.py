@@ -18,7 +18,6 @@ import cloudinary
 from dotenv import load_dotenv
 
 load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,6 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "service-account.json")
 
 FIREBASE_PROJECT_ID = "sabac-a0691"
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -37,18 +37,39 @@ SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ["sabac-webapp-382170497486.us-central1.run.app"]
-# CSRF_TRUSTED_ORIGINS = ["https://sabac-webapp-382170497486.us-central1.run.app"]
 
+ALLOWED_HOSTS = [
+    "*",
+    "sabac-server-530056698.us-central1.run.app",
+    "sabac-webapp-382170497486.us-central1.run.app"
+]
 
-
-ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app",
-                "sabac-webapp-382170497486.us-central1.run.app"]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://sabac-server-530056698.us-central1.run.app",
     "https://sabac-webapp-382170497486.us-central1.run.app",
 ]
+
+
+# ALLOWED_HOSTS = ["sabac-webapp-382170497486.us-central1.run.app"]
+# CSRF_TRUSTED_ORIGINS = ["https://sabac-webapp-382170497486.us-central1.run.app"]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "https://sabac-webapp-382170497486.us-central1.run.app",  # your web app
+]
+
+
+
+
+
+
+
+
+
+
 
 # CSRF_TRUSTED_ORIGINS = ["https://*"]
 
@@ -106,9 +127,9 @@ CHANNEL_LAYERS = {
 ASGI_APPLICATION = "sabac_project.asgi.application"
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -118,8 +139,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "sabac_project.urls"
 
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+
 
 
 REST_FRAMEWORK = {
