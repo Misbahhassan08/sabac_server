@@ -42,8 +42,15 @@ DEBUG = True
 
 
 
-ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app","sabac-webapp-382170497486.us-central1.run.app"]
-CSRF_TRUSTED_ORIGINS = ["https://*"]
+ALLOWED_HOSTS = ["*", "sabac-server-530056698.us-central1.run.app",
+                "sabac-webapp-382170497486.us-central1.run.app"]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://sabac-server-530056698.us-central1.run.app",
+    "https://sabac-webapp-382170497486.us-central1.run.app",
+]
+
+# CSRF_TRUSTED_ORIGINS = ["https://*"]
 
 # ALLOWED_HOSTS = [
 #     "sabac-server-530056698.us-central1.run.app",
