@@ -361,9 +361,9 @@ def logout(request):
         device_id = request.data.get("device_id")
         device_token = request.data.get("device_token")
 
-        if not refresh_token or not device_id or not device_token:
+        if not refresh_token or not device_id:
             return Response(
-                {"success": False, "error": "refresh_token , device_id and device token are required"},
+                {"success": False, "error": "refresh_token and device_id are required"},
                 status=400,
             )
 

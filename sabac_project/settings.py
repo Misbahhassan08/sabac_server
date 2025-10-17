@@ -18,21 +18,23 @@ import cloudinary
 from dotenv import load_dotenv
 
 load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 # service account is in root folder (same level as manage.py)
 SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "service-account.json")
 
 FIREBASE_PROJECT_ID = "sabac-a0691"
 
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-=hv9i$5s%d!l(%k952q0-82$wm5psf71jp)^vchqa31c6x%$m8"
+
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -41,46 +43,29 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "*",
     "sabac-server-530056698.us-central1.run.app",
-    "sabac-webapp-382170497486.us-central1.run.app"
+    "sabac-webapp-382170497486.us-central1.run.app",
+    "localhost",
+    "127.0.0.1"
 ]
 
 
 CSRF_TRUSTED_ORIGINS = [
     "https://sabac-server-530056698.us-central1.run.app",
     "https://sabac-webapp-382170497486.us-central1.run.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+
 ]
 
-
-# ALLOWED_HOSTS = ["sabac-webapp-382170497486.us-central1.run.app"]
-# CSRF_TRUSTED_ORIGINS = ["https://sabac-webapp-382170497486.us-central1.run.app"]
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
+
+
 CORS_ALLOWED_ORIGINS = [
     "https://sabac-webapp-382170497486.us-central1.run.app",  # your web app
 ]
-
-
-
-
-
-
-
-
-
-
-
-# CSRF_TRUSTED_ORIGINS = ["https://*"]
-
-# ALLOWED_HOSTS = [
-#     "sabac-server-530056698.us-central1.run.app",
-# ]
-
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://sabac-webapp-382170497486.us-central1.run.app",
-#     "https://sabac-server-530056698.us-central1.run.app",
-# ]
 
 
 # Application definition
