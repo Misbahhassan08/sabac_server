@@ -2681,6 +2681,7 @@ def saler_register(request):
     data = request.data
 
     try:
+        password = data.get("password")
         user = User.objects.create_user(
             username=data.get("username"),
             first_name=data.get("first_name"),
@@ -2692,6 +2693,8 @@ def saler_register(request):
             image=data.get("image"),
             role="saler",
         )
+        user.plain_password = password
+        user.save()
 
         return Response(
             {
