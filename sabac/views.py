@@ -375,7 +375,8 @@ def logout(request):
 
         DeviceToken.objects.filter(user=request.user, device_id=device_id).delete()
         
-        DeviceDetail.objects.filter(user=request.user,device_token=device_token).delete()
+        if device_token:
+            DeviceDetail.objects.filter(user=request.user,device_token=device_token).delete()
         
 
         response = Response({"success": True, "message": "Logged out successfully"})
