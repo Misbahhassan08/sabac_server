@@ -58,13 +58,15 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 
 
 CORS_ALLOWED_ORIGINS = [
     "https://sabac-webapp-382170497486.us-central1.run.app",  # your web app
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 
