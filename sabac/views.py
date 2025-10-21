@@ -987,13 +987,13 @@ def approve_inspection(request, report_id):
         car.save(update_fields=["status"])
 
 
-        # === Notify Seller ===
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"Your car '{car.car_name} ({car.year})' has been approved for bidding.",
-            category="car_approved",
-            saler_car=car,
-        )
+        # # === Notify Seller ===
+        # Notification.objects.create(
+        #     recipient=car.user,
+        #     message=f"Your car '{car.car_name} ({car.year})' has been approved for bidding.",
+        #     category="car_approved",
+        #     saler_car=car,
+        # )
         
 
         # === Push notification for all Dealers ===
@@ -1004,7 +1004,7 @@ def approve_inspection(request, report_id):
             Notification.objects.create(
                 recipient=dealer,
                 message=f"A new car '{car.car_name} ({car.year})' is now available for bidding.",
-                category="dealer_new_bid_car",
+                category="car_live",
                 saler_car=car,
             )
 
@@ -1759,13 +1759,13 @@ def accept_bid(request, bid_id):
         bid=bid,
         category="bid_accepted",
     )
-    if bid.saler_car:
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"Your car {car.company} {car.car_name} {car.year} has been sold.",
-            category="car_sold",
-            saler_car=car,
-        )
+    # if bid.saler_car:
+    #     Notification.objects.create(
+    #         recipient=car.user,
+    #         message=f"Your car {car.company} {car.car_name} {car.year} has been sold.",
+    #         category="car_sold",
+    #         saler_car=car,
+    #     )
     
     # === PUSH NOTIFICATION FOR WINNER DEALER ===
     
@@ -4153,7 +4153,7 @@ def get_notifications(request):
         notifications = Notification.objects.filter(
             recipient=user,
             category__in=[
-                "dealer-upcoming-car", "dealer_car_inspected","dealer_car_inspected_mob",
+                "dealer-upcoming-car", "dealer_car_inspected","dealer_car_inspected_mob","dealer_guest_car_inspected_mob","dealer_guest_car_inspected","car_live","guest_car_live","bid_accepted","bid_rejected"
             ],
             is_read=False,
         )
@@ -4168,7 +4168,7 @@ def get_notifications(request):
     elif user.role == "admin":
         notifications = Notification.objects.filter(
             recipient=user,
-            category__in=["admin-upcomig-car","admin_car_inspected","admin_car_inspected_mob"],
+            category__in=["admin-upcomig-car","admin_car_inspected","admin_car_inspected_mob","admin_guest_car_inspected_mob","admin_guest_car_inspected","new_bid"],
             is_read=False,
         )
     else:
@@ -4427,12 +4427,10 @@ def get_upcoming_cars(request):
 @permission_classes([IsAuthenticated])
 def place_bid(request):
     user = request.user
-
     if user.role != "dealer":
         return Response(
             {"message": "Only dealers can place bids"}, status=status.HTTP_403_FORBIDDEN
         )
-
     data = request.data
     saler_car_id = data.get("saler_car")
     guest_car_id = data.get("guest_car")
@@ -4443,7 +4441,6 @@ def place_bid(request):
             {"message": "bid_amount and either saler_car or guest_car are required"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-
     bid = None
     saler_car = None
     guest_car = None
@@ -4514,43 +4511,43 @@ def place_bid(request):
         send_notification(title="Bid Alert", body = message , user=admin)
         
         # === Notify the dealers about cempetative bid ===
-        if saler_car:
-            prev_bidders = Bidding.objects.filter(
-                saler_car=saler_car
-                ).exclude(dealer=user).values_list("dealer_id",flat=True).distinct()
-        else:
-            prev_bidders = Bidding.objects.filter(
-                saler_car=saler_car
-                ).exclude(dealer=user).values_list("dealer_id",flat=True).distinct()
-            
-        for dealer_id in prev_bidders:
-            dealer_user = User.objects.get(id=dealer_id)
-            # ===car details ===
-            car_info = (
-                f"{saler_car.company} {saler_car.car_name} {saler_car.car_variant}"
-                if saler_car else
-                f"{guest_car.company} {guest_car.car_name} {guest_car.car_variant}"
-                )
-            
-            dealer_message = (
-                f"Bid placed of {bid_amount} on {car_info} by "
-                f"{bid.dealer.first_name} {bid.dealer.last_name}. Stay competative"
-                )
-            
-            Notification.objects.create(
-            recipient=dealer_user,
-            message=dealer_message,
-            saler_car=saler_car,
-            guest_car=guest_car,
-            category="competative_bid",
-            bid=bid,
-        )
-            # === push notification for competetion ===
-            send_notification(
-                title="Competing Bid Alert",
-                body=dealer_message,
-                user=dealer_user
+    if saler_car:
+        prev_bidders = Bidding.objects.filter(
+            saler_car=saler_car
+            ).exclude(dealer=user).values_list("dealer_id",flat=True).distinct()
+    else:
+        prev_bidders = Bidding.objects.filter(
+            guest_car=guest_car
+            ).exclude(dealer=user).values_list("dealer_id",flat=True).distinct()
+        
+    for dealer_id in prev_bidders:
+        dealer_user = User.objects.get(id=dealer_id)
+        # ===car details ===
+        car_info = (
+            f"{saler_car.company} {saler_car.car_name} {saler_car.car_variant}"
+            if saler_car else
+            f"{guest_car.company} {guest_car.car_name} {guest_car.car_variant}"
             )
+        
+        dealer_message = (
+            f"Bid placed of {bid_amount} on {car_info} by "
+            f"{bid.dealer.first_name} {bid.dealer.last_name}. Stay competative"
+            )
+        
+        Notification.objects.create(
+        recipient=dealer_user,
+        message=dealer_message,
+        saler_car=saler_car,
+        guest_car=guest_car,
+        category="competative_bid",
+        bid=bid,
+    )
+        # === push notification for competetion ===
+        send_notification(
+            title="Competing Bid Alert",
+            body=dealer_message,
+            user=dealer_user
+        )
 
 
     serializer = BiddingSerializer(bid)
@@ -5039,7 +5036,7 @@ def guest_inspection_report_post(request):
             Notification.objects.create(
                 recipient=dealer,
                 message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-                category="dealer_car_inspected_mob",
+                category="dealer_guest_car_inspected",
                 guest_car=car,
             )
         admins = User.objects.filter(role="admin")
@@ -5047,7 +5044,7 @@ def guest_inspection_report_post(request):
             Notification.objects.create(
                 recipient=admin,
                 message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-                category="admin_car_inspected_mob",
+                category="admin_guest_car_inspected",
                 guest_car=car,
             )
         
@@ -5267,8 +5264,8 @@ def get_bidding_cars_by_guest(request):
 def approve_guest_inspection(request, report_id):
     report = get_object_or_404(InspectionReport, id=report_id)
     
-    print("DEBUG guest_car:", report.guest_car)
-    print("DEBUG status:", getattr(report.guest_car, "status", None))
+    # print("DEBUG guest_car:", report.guest_car)
+    # print("DEBUG status:", getattr(report.guest_car, "status", None))
 
     if report.guest_car and report.guest_car.status == "await_approval":
         car = report.guest_car
@@ -5281,7 +5278,7 @@ def approve_guest_inspection(request, report_id):
             Notification.objects.create(
                 recipient=dealer,
                 message=f"Guest car '{report.guest_car.car_name}' has been approved for bidding.",
-                category="dealer_guest_car_approved",
+                category="guest_car_live",
                 guest_car=report.guest_car,
             )
             # === PUSH NOTIFICATION === 
