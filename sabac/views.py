@@ -2278,7 +2278,7 @@ def add_car_details(request):
             inspection_date = car_details.inspection_date
             inspection_time = car_details.inspection_time
             
-            inspector_ids = request.data.get("inspector")   # can be int or list
+            inspector_ids = request.data.get("inspector")   
             if isinstance(inspector_ids, list):
                 inspectors = User.objects.filter(id__in=inspector_ids, role="inspector")
             else:
@@ -2298,9 +2298,30 @@ def add_car_details(request):
                 Notification.objects.create(
                     recipient=inspector,
                     message=message,
-                    category="saler_car_details",
+                    category="appointment-scheduled",
+                )
+                # ------admin------------
+            message = (
+                f"New Car: {car_details.car_name} ({car_details.year}) "
+                f"Added by: {user.username} (Phone: {saler_phone_number}). "
+            )
+            
+            admins= User.objects.filter(role="admin")
+            for admin in admins:
+                Notification.objects.create(
+                    recipient=admin,
+                    message=message,
+                    category="admin-upcomig-car"
                 )
                 
+            # -------dealer------
+            dealers = User.objects.filter(role="dealer")
+            for dealer in dealers:
+                Notification.objects.create(
+                    recipient=dealer,
+                    message=message,
+                    category="dealer-upcoming-car"
+                )
                 
             # === ROLE based push notification ====
             admin_title = "New Car Alert"
@@ -2331,8 +2352,6 @@ def add_car_details(request):
             admin_body = f"A new car ({car_details.car_name} - {car_details.year}) was added by {user.username}."
             send_notification(admin_title, admin_body, role="dealer")       
                 
-                
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -3330,30 +3349,40 @@ def post_inspection_report(request):
     if serializer.is_valid():
         report = serializer.save(inspector=user, saler_car=car)
 
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-            category="Your_car_inspected",
-            saler_car=car,
-        )
-
+        # Notification.objects.create(
+        #     recipient=car.user,
+        #     message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+        #     category="Your_car_inspected",
+        #     saler_car=car,
+        # )
+        
+        # ----dealer-----------
         dealers = User.objects.filter(role="dealer")
         for dealer in dealers:
+            print("dealers",dealer)
             Notification.objects.create(
                 recipient=dealer,
                 message=f"The car '{car.car_name} ({car.year})' has been inspected. Check the inspection report.",
                 category="dealer_car_inspected",
                 saler_car=car,
             )
-
+        # --------admin------------
         admins = User.objects.filter(role="admin")
         for admin in admins:
+            print("admin:",admin)
             Notification.objects.create(
                 recipient=admin,
                 message=f"The car '{car.car_name} ({car.year})' has been inspected. The inspection report is available.",
                 category="admin_car_inspected",
                 saler_car=car,
             )
+
+                 # === ROLE based push notification ====      
+        
+        
+        admin_title = "Approval Alert"
+        admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
+        send_notification(admin_title, admin_body, role="admin")
 
         return Response(
             {
@@ -3549,31 +3578,31 @@ def post_inspection_report_mob(request):
         car.save(update_fields=["status", "is_inspected"])
         
         
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-            category="Your_car_inspected",
-            saler_car=car,
-        )
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-            category="dealer_car_inspected",
-            saler_car=car,
-        )
-        Notification.objects.create(
-            recipient=car.user,
-            message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
-            category="admin_car_inspected",
-            saler_car=car,
-        )
+        # Notification.objects.create(
+        #     recipient=car.user,
+        #     message=f"Your car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+        #     category="Your_car_inspected",
+        #     saler_car=car,
+        # )
+        dealers = User.objects.filter(role="dealer")
+        for dealer in dealers:
+            Notification.objects.create(
+                recipient=dealer,
+                message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+                category="dealer_car_inspected_mob",
+                saler_car=car,
+            )
+        admins = User.objects.filter(role="admin")
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+                category="admin_car_inspected_mob",
+                saler_car=car,
+            )
         
         
-                    # === ROLE based push notification ====
-        
-
-        
-        
+         # === ROLE based push notification ====      
         admin_title = "Approval Alert"
         admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
         send_notification(admin_title, admin_body, role="admin")
@@ -3910,7 +3939,7 @@ def add_availability(request):
 def get_seller_appointment_notification(request):
     user = request.user
     appointment_notifications = Notification.objects.filter(
-        recipient=user, category="seller_time_slot_selection"
+        recipient=user, category="appointment-scheduled"
     ).order_by("-created_at")
 
     serializer = NotificationSerializer(appointment_notifications, many=True)
@@ -4124,9 +4153,7 @@ def get_notifications(request):
         notifications = Notification.objects.filter(
             recipient=user,
             category__in=[
-                "dealer_car_inspected",
-                "dealer_new_bid_car",
-                "dealer_guest_car_approved",
+                "dealer-upcoming-car", "dealer_car_inspected","dealer_car_inspected_mob",
             ],
             is_read=False,
         )
@@ -4134,14 +4161,14 @@ def get_notifications(request):
     elif user.role == "inspector":
         notifications = Notification.objects.filter(
             recipient=user,
-            category__in=["saler_car_details", "inspection_assignment"],
+            category__in=["appointment-scheduled", "inspection_assignment"],
             is_read=False,
         )
 
     elif user.role == "admin":
         notifications = Notification.objects.filter(
             recipient=user,
-            category__in=["admin_car_inspected", "admin_guest_car_inspected"],
+            category__in=["admin-upcomig-car","admin_car_inspected","admin_car_inspected_mob"],
             is_read=False,
         )
     else:
@@ -4599,7 +4626,8 @@ def guest_add_car_details(request):
 
         inspector_id = data.get("inspector_id")
         inspector = None
-
+        
+        # ------get inspector-----
         if inspector_id:
             try:
                 inspector = User.objects.get(id=inspector_id, role="inspector")
@@ -4609,11 +4637,12 @@ def guest_add_car_details(request):
                     {"error": "Invalid Inspector ID."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
+                             
+        # -----save guest------
         guest_serializer = GuestSerializer(data=data)
         if guest_serializer.is_valid():
             guest = guest_serializer.save()
-
+            
             # Save selected slot if both values are present
             if inspector and guest.inspection_time and guest.inspection_date:
                 try:
@@ -4636,26 +4665,80 @@ def guest_add_car_details(request):
                     booked_by="guest",
                 )
 
-            # Notification formatting
-            if inspector:
-                inspection_date = guest.inspection_date
-                inspection_time = guest.inspection_time
+            # ===== Notification Section (Fixed) =====
+            inspection_date = guest.inspection_date
+            inspection_time = guest.inspection_time
 
+            # --- Inspector Notification ---
+            if inspector:
                 message = (
-                    f"You have been assigned to inspect the car '{guest.car_name}' "
-                    f"from guest '{guest.name}'. "
+                    f"New Car: {guest.car_name} ({guest.year}) "
+                    f"Added by (guest): {guest.name} (Phone: {guest.number}). "
                 )
 
                 if inspection_date and inspection_time:
-                    message += f"Appointment scheduled on {inspection_date} at {inspection_time}."
+                    message += f"Inspection Scheduled on {inspection_date} at {inspection_time}."
                 else:
                     message += "No appointment scheduled."
 
                 Notification.objects.create(
                     recipient=inspector,
                     message=message,
-                    category="inspection_assignment",
+                    category="appointment-scheduled",
                 )
+
+            # --- Admin Notification ---
+            message = (
+                f"New Car: {guest.car_name} ({guest.year}) "
+                f"Added by (guest): {guest.name} (Phone: {guest.number}). "
+            )
+
+            admins = User.objects.filter(role__iexact="admin")
+            for admin in admins:
+                Notification.objects.create(
+                    recipient=admin,
+                    message=message,
+                    category="admin-upcoming-car",  # ✅ fixed typo
+                )
+
+            # --- Dealer Notification ---
+            dealers = User.objects.filter(role__iexact="dealer")
+            for dealer in dealers:
+                Notification.objects.create(
+                    recipient=dealer,
+                    message=message,
+                    category="dealer-upcoming-car",
+                )
+                
+                
+             # === ROLE based push notification ====
+            admin_title = "New Car Alert"
+            admin_body = f"A new car ({guest.car_name} - {guest.year}) was added by (guest) {guest.name}."
+            send_notification(admin_title, admin_body, role="admin")
+            
+            # inspector 
+            if inspector:
+                body = (
+                    f"You are assigned to inspect {guest.car_name} ({guest.year}). "
+                    f"Guest: {guest.name}, Phone: {guest.number}. "
+                )
+                if inspection_date and inspection_time:
+                    body += f"Inspection scheduled on {inspection_date} at {inspection_time}."
+                else:
+                    body += "No inspection appointment set."
+
+                send_notification(
+                    title="🛠️ New Inspection Assigned",
+                    body=body,
+                    user=inspector  # direct push to this inspector
+                    
+                )
+            
+            
+            # dealer
+            admin_title = "Upcoming Alert"
+            admin_body = f"A new car ({guest.car_name} - {guest.year}) was added by {guest.name}."
+            send_notification(admin_title, admin_body, role="dealer") 
 
             return Response(
                 {
@@ -4929,7 +5012,6 @@ def guest_inspection_report_post(request):
         )
 
     data = request.data
-
     guest_car_id = data.get("guest_car")
 
     if not guest_car_id:
@@ -4951,6 +5033,31 @@ def guest_inspection_report_post(request):
         car.is_inspected = True
         car.status = "await_approval"
         car.save()
+        
+        dealers = User.objects.filter(role="dealer")
+        for dealer in dealers:
+            Notification.objects.create(
+                recipient=dealer,
+                message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+                category="dealer_car_inspected_mob",
+                guest_car=car,
+            )
+        admins = User.objects.filter(role="admin")
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                message=f"car '{car.car_name} ({car.year})' has been inspected by {user.username}.",
+                category="admin_car_inspected_mob",
+                guest_car=car,
+            )
+        
+        
+         # === ROLE based push notification ====      
+        admin_title = "Approval Alert"
+        admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
+        send_notification(admin_title, admin_body, role="admin")
+        
+        
 
         return Response(
             {
@@ -5024,9 +5131,18 @@ def post_guest_inspection_report_mob(request):
             Notification.objects.create(
                 recipient=admin,
                 message=f"Guest car '{car.car_name} ({car.year})' has been inspected. Check the inspection report.",
-                category="admin_guest_car_inspected",
+                category="admin_guest_car_inspected_mob",
                 guest_car=car,
             )
+        dealers = User.objects.filter(role="dealer")
+        for dealer in dealers:
+            Notification.objects.create(
+                recipient=dealer,
+                message=f"car '{car.car_name} ({car.year})' has been inspected by {car.name}.",
+                category="dealer_guest_car_inspected_mob",
+                guest_car=car,
+            )
+
 
         admin_title = "Approval Alert"
         admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
