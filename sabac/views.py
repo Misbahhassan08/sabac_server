@@ -1014,7 +1014,12 @@ def approve_inspection(request, report_id):
                 f"The car {car.car_name} {car.car_variant} "
                 f"({car.year}) is now live for bidding. Place your bids before the auction ends!"
             )
-            send_notification(dealer_title, dealer_body, user=dealer)
+            send_notification(dealer_title, dealer_body, user=dealer, more_detail={
+                "car_type": "seller",
+                "car_id": str(car.saler_car_id),
+                "car_name": car.car_name,
+                "tab": "live"
+            })
 
 
         # === Optional Admin Push ===
@@ -1776,7 +1781,12 @@ def accept_bid(request, bid_id):
     # message for dealer
     message = f"You just won {car_info} with your bid of {bid.bid_amount}. Congratulations on the successful deal!"
     
-    send_notification(title="You Got the Car!", body=message, user=bid.dealer)
+    send_notification(title="You Got the Car!", body=message, user=bid.dealer, more_detail={
+                "car_type": "seller" if bid.saler_car else "guest",
+                "car_id": str(bid.saler_car.saler_car_id) if bid.saler_car else str(bid.guest_car.id),
+                "car_name": bid.saler_car.car_name if bid.saler_car else bid.guest_car.car_name,
+                "tab": "win"
+            })
     
     # ===notify other dealers===
     message = (
@@ -2278,6 +2288,8 @@ def add_car_details(request):
             inspection_date = car_details.inspection_date
             inspection_time = car_details.inspection_time
             
+            tab_value = "upcoming" if inspection_date and inspection_time else "manual"
+            
             inspector_ids = request.data.get("inspector")   
             if isinstance(inspector_ids, list):
                 inspectors = User.objects.filter(id__in=inspector_ids, role="inspector")
@@ -2326,7 +2338,14 @@ def add_car_details(request):
             # === ROLE based push notification ====
             admin_title = "New Car Alert"
             admin_body = f"A new car ({car_details.car_name} - {car_details.year}) was added by {user.username}."
-            send_notification(admin_title, admin_body, role="admin")
+            
+            send_notification(admin_title, admin_body, role="admin", more_detail={
+                "car_type": "seller",
+                "car_id": str(car_details.saler_car_id),
+                "car_name": car_details.car_name,
+                "tab":"upcoming"
+            },)
+           
             
             # inspector 
             for inspector in inspectors:
@@ -2342,15 +2361,28 @@ def add_car_details(request):
                 send_notification(
                     title="🛠️ New Inspection Assigned",
                     body=body,
-                    user=inspector  # direct push to this inspector
-                    
+                    user=inspector,
+                     more_detail={
+                "car_type": "seller",
+                "car_id": str(car_details.saler_car_id),
+                "car_name": car_details.car_name,
+                "tab":tab_value
+            }     
                 )
+                
             
             
             # dealer
             admin_title = "Upcoming Alert"
             admin_body = f"A new car ({car_details.car_name} - {car_details.year}) was added by {user.username}."
-            send_notification(admin_title, admin_body, role="dealer")       
+            send_notification(admin_title, admin_body, role="dealer",
+                               more_detail={
+                "car_type": "seller",
+                "car_id": str(car_details.saler_car_id),
+                "car_name": car_details.car_name,
+                "tab":"upcoming"
+            })   
+               
                 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -3382,8 +3414,17 @@ def post_inspection_report(request):
         
         admin_title = "Approval Alert"
         admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
-        send_notification(admin_title, admin_body, role="admin")
-
+        send_notification(
+            title=admin_title,
+            body=admin_body,
+            role="admin",
+            more_detail={
+                "car_type": "seller",
+                "car_id": str(car.saler_car_id),
+                "car_name": car.car_name,
+                "tab": "awaiting"
+            }
+        )
         return Response(
             {
                 "message": "Inspection report submitted successfully.",
@@ -3605,7 +3646,12 @@ def post_inspection_report_mob(request):
          # === ROLE based push notification ====      
         admin_title = "Approval Alert"
         admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
-        send_notification(admin_title, admin_body, role="admin")
+        send_notification(admin_title, admin_body, role="admin",more_detail={
+                "car_type": "seller",
+                "car_id": str(car.saler_car_id),
+                "car_name": car.car_name,
+                "tab": "awaiting"
+            })
         return Response(
             {
                 "message": "Inspection report submitted successfully.",
@@ -4562,6 +4608,7 @@ def place_bid(request):
         )
 
 
+
     serializer = BiddingSerializer(bid)
     return Response(
         {
@@ -4677,6 +4724,9 @@ def guest_add_car_details(request):
             # ===== Notification Section (Fixed) =====
             inspection_date = guest.inspection_date
             inspection_time = guest.inspection_time
+            
+            tab_value = "upcoming" if inspection_date and inspection_time else "manual"
+
 
             # --- Inspector Notification ---
             if inspector:
@@ -4723,7 +4773,12 @@ def guest_add_car_details(request):
              # === ROLE based push notification ====
             admin_title = "New Car Alert"
             admin_body = f"A new car ({guest.car_name} - {guest.year}) was added by (guest) {guest.name}."
-            send_notification(admin_title, admin_body, role="admin")
+            send_notification(admin_title, admin_body, role="admin",more_detail={
+            "car_type":  "guest",
+            "car_id":str(guest.id),
+            "car_name": guest.car_name,
+            "tab": "upcoming"
+        },)
             
             # inspector 
             if inspector:
@@ -4735,19 +4790,28 @@ def guest_add_car_details(request):
                     body += f"Inspection scheduled on {inspection_date} at {inspection_time}."
                 else:
                     body += "No inspection appointment set."
-
+                    
                 send_notification(
                     title="🛠️ New Inspection Assigned",
                     body=body,
-                    user=inspector  # direct push to this inspector
-                    
-                )
+                    user=inspector,
+                    more_detail={
+                    "car_type":  "guest",
+                    "car_id":str(guest.id),
+                    "car_name": guest.car_name,
+                    "tab": tab_value
+                })
             
             
             # dealer
             admin_title = "Upcoming Alert"
             admin_body = f"A new car ({guest.car_name} - {guest.year}) was added by {guest.name}."
-            send_notification(admin_title, admin_body, role="dealer") 
+            send_notification(admin_title, admin_body, role="dealer",more_detail={
+                "car_type":  "guest",
+                "car_id":str(guest.id),
+                "car_name": guest.car_name,
+                "tab": "upcoming"
+            }) 
 
             return Response(
                 {
@@ -5064,7 +5128,12 @@ def guest_inspection_report_post(request):
          # === ROLE based push notification ====      
         admin_title = "Approval Alert"
         admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
-        send_notification(admin_title, admin_body, role="admin")
+        send_notification(admin_title, admin_body, role="admin",more_detail={
+                "car_type": "seller",
+                "car_id": str(car.id),
+                "car_name": car.car_name,
+                "tab": "awaiting"
+            })
         
         
 
@@ -5155,7 +5224,12 @@ def post_guest_inspection_report_mob(request):
 
         admin_title = "Approval Alert"
         admin_body = f"A car ({car.car_name} - {car.car_variant} - {car.year}) waiting for Approval"
-        send_notification(admin_title, admin_body, role="admin")
+        send_notification(admin_title, admin_body, role="admin",more_detail={
+                "car_type": "seller",
+                "car_id": str(car.id),
+                "car_name": car.car_name,
+                "tab": "awaiting"
+            })
 
 
 
@@ -5299,7 +5373,12 @@ def approve_guest_inspection(request, report_id):
             f"The car {report.guest_car.car_name} {report.guest_car.car_variant} "
             f"({report.guest_car.year}) is now live for bidding. Place your bids before the auction ends!"
         )
-        send_notification(dealer_title, dealer_body, role="dealer")
+        send_notification(dealer_title, dealer_body, role="dealer", more_detail={
+                "car_type": "seller",
+                "car_id": str(car.id),
+                "car_name": car.car_name,
+                "tab": "live"
+            })
 
         return Response(
             {"message": "Guest car approved and moved to bidding"},
