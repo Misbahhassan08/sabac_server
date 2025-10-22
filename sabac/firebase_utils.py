@@ -29,7 +29,7 @@ credentials = service_account.Credentials.from_service_account_info(
 
 
 
-def send_fcm_notification(device_token, role, title, body):
+def send_fcm_notification(device_token, role, title, body, more_detail=None):
     """Send push notification via Firebase Cloud Messaging"""
     try:
         request = google.auth.transport.requests.Request()
@@ -41,12 +41,16 @@ def send_fcm_notification(device_token, role, title, body):
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json; UTF-8",
         }
+        
+        data_payload = {"role":role}
+        if more_detail:
+            data_payload.update(more_detail)
 
         message = {
             "message": {
                 "token": device_token,
                 "notification": {"title": title, "body": body},
-                "data": {"role": role},
+                "data": data_payload,
             }
         }
 

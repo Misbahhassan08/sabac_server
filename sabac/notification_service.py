@@ -42,7 +42,7 @@
 from sabac.firebase_utils import send_fcm_notification
 
 
-def send_notification(title, body, role=None, user=None):
+def send_notification(title, body, role=None, user=None,more_detail=None):
     from sabac.models import DeviceDetail
     """
     Send push notifications via FCM.
@@ -61,7 +61,7 @@ def send_notification(title, body, role=None, user=None):
     for notif in notifications:
         if notif.device_token:
             status_code, response_text = send_fcm_notification(
-                notif.device_token, notif.role, title, body
+                notif.device_token, notif.role, title, body,more_detail=more_detail
             )
             results.append({
                 "device_token": notif.device_token,

@@ -4508,7 +4508,12 @@ def place_bid(request):
             bid=bid,
         )
         # === PUSH NOTIFICATION FOR ADMIN ===
-        send_notification(title="Bid Alert", body = message , user=admin)
+        send_notification(title="Bid Alert", body = message , user=admin,
+                          more_detail={
+                "car_type": "seller" if saler_car else "guest",
+                "car_id": str(saler_car_id) if saler_car else str(guest_car_id),
+                "car_name": saler_car.car_name if saler_car else guest_car.car_name
+            },)
         
         # === Notify the dealers about cempetative bid ===
     if saler_car:
@@ -4546,7 +4551,14 @@ def place_bid(request):
         send_notification(
             title="Competing Bid Alert",
             body=dealer_message,
-            user=dealer_user
+            user=dealer_user,
+            more_detail={
+                "car_type": "seller" if saler_car else "guest",
+                "car_id": str(saler_car_id) if saler_car else str(guest_car_id),
+                "car_name": saler_car.car_name if saler_car else guest_car.car_name,
+                "tab":"live"
+                
+            },
         )
 
 
