@@ -4558,7 +4558,8 @@ def place_bid(request):
                           more_detail={
                 "car_type": "seller" if saler_car else "guest",
                 "car_id": str(saler_car_id) if saler_car else str(guest_car_id),
-                "car_name": saler_car.car_name if saler_car else guest_car.car_name
+                "car_name": saler_car.car_name if saler_car else guest_car.car_name,
+                "tab":"bid"
             },)
         
         # === Notify the dealers about cempetative bid ===
@@ -4779,6 +4780,7 @@ def guest_add_car_details(request):
             "car_name": guest.car_name,
             "tab": "upcoming"
         },)
+
             
             # inspector 
             if inspector:
@@ -4801,6 +4803,7 @@ def guest_add_car_details(request):
                     "car_name": guest.car_name,
                     "tab": tab_value
                 })
+
             
             
             # dealer

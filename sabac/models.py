@@ -47,6 +47,15 @@ SPECIFICATON_OPTIONS = [
     ("non_specs", "NON SPECS"),
     ("i_dont_know", "I DONT KNOW"),
 ]
+# SPECIFICATON_OPTIONS = [
+#     ("mid_option", "Mid Option"),
+#     ("full_option", "Full Option"),
+#     ("sport_package", "Sport Package"),
+#     ("luxury_package", "Luxury Package"),
+#     ("tech_package", "Tech Package"),
+#     ("single_owner", "Single Owner"),
+#     ("company_maintained", "Company Maintained"),
+# ]
 
 class saler_car_details(models.Model):
     STATUS_CHOICES = [
@@ -179,7 +188,15 @@ class saler_car_details(models.Model):
                     category="dealer_car_expied"
                 )
             # ===push notification Dealer ===
-                send_notification(title="Car Expired" , body=message , user=dealer)
+                send_notification(title="Car Expired" , body=message , user=dealer,
+                    more_detail={
+                    "car_type": "seller",
+                    "car_id": str(self.saler_car_id),
+                    "car_name": self.car_name,
+                    "tab": "expire",
+                })
+                print(f"[✅ Dealer Notified] Dealer ID: {dealer.id} - {dealer.email} for Car: {car_info}")
+
             
             # ===notifiy Admin===
             
@@ -196,7 +213,13 @@ class saler_car_details(models.Model):
                     saler_car= self,
                     category = "admin_car_expired" 
                 )
-                send_notification(title="Car Expired", body=message, user=admin)
+                send_notification(title="Car Expired", body=message, user=admin,more_detail={
+                    "car_type": "seller",
+                    "car_id": str(self.saler_car_id),
+                    "car_name": self.car_name,
+                    "tab": "expire",
+                })
+                print(f"[✅ Admin Notified] Admin ID: {admin.id} - {admin.email} for Car: {car_info}")
             
                 
                 
@@ -332,7 +355,12 @@ class Guest(models.Model):
                     category="dealer_car_expied"
                 )
             # ===push notification Dealer ===
-                send_notification(title="Car Expired" , body=message , user=dealer)
+                send_notification(title="Car Expired" , body=message , user=dealer,more_detail={
+                    "car_type": "seller",
+                    "car_id": str(self.id),
+                    "car_name": self.car_name,
+                    "tab": "expire",
+                })
             
             # ===notifiy Admin===
             
@@ -349,7 +377,12 @@ class Guest(models.Model):
                     saler_car= self,
                     category = "admin_car_expired" 
                 )
-                send_notification(title="Car Expired", body=message, user=admin)
+                send_notification(title="Car Expired", body=message, user=admin,more_detail={
+                    "car_type": "seller",
+                    "car_id": str(self.id),
+                    "car_name": self.car_name,
+                    "tab": "expire",
+                })
     
     
     
