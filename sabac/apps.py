@@ -90,7 +90,7 @@ class SabacConfig(AppConfig):
                 car.save(update_fields=["status"])
                 print(f"[✅ Auto-expired] Guest Car ID {car.id} - {car.car_name}")
 
-            print("✅ Expiry check completed.\n")
+            # print("✅ Expiry check completed.\n")
 
 
         scheduler.add_job(expire_cars_job, "interval", seconds=1, id="expire_cars_job", replace_existing=True)
