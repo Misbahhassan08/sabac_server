@@ -2041,6 +2041,7 @@ def set_up_live_duration(request):
     hours = request.data.get("hours",0)
     minutes = request.data.get("minutes",0)
     seconds = request.data.get("seconds",0)
+    # print(f"requested data: days:{days} : hours:{hours} min:{minutes} sec:{seconds}")
     
 
     
@@ -2052,8 +2053,8 @@ def set_up_live_duration(request):
     except saler_car_details.DoesNotExist:
         return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
     
-    if car.status != "bidding":
-        return Response({"message" : "car is not in Bidding yet"},status=status.HTTP_400_BAD_REQUEST)
+    if car.status != "bidding" and car.status != "expired":
+        return Response({"message" : "car is not in Bidding or not expired yet"},status=status.HTTP_400_BAD_REQUEST)
     
     if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
@@ -2068,23 +2069,28 @@ def set_up_live_duration(request):
         return Response({"error": "Invalid values"}, status=status.HTTP_400_BAD_REQUEST)
     
     delta = timedelta(days=days , hours=hours , minutes=minutes , seconds=seconds)
-    
     car.bidding_end_time += delta
-    
+
+       # 🔹 Update status based on time
     if car.bidding_end_time <= timezone.now():
         car.status = "expired"
-    car.save()
+    else:
+        car.status = "bidding"
+
+    car.save(update_fields=["bidding_end_time", "status"])
+
     
     remaining = car.bidding_end_time - timezone.now()
+
     
-    if car.status == "expired":
-        remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
-    else:
-        remaining_days = remaining.days
-        remaining_seconds = remaining.seconds
-        remaining_hours = remaining_seconds // 3600
-        remaining_minutes = (remaining_seconds % 3600) // 60
-        remaining_seconds = remaining_seconds % 60
+    # if car.status == "expired":
+    #     remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+    # else:
+    remaining_days = remaining.days
+    remaining_seconds = remaining.seconds
+    remaining_hours = remaining_seconds // 3600
+    remaining_minutes = (remaining_seconds % 3600) // 60
+    remaining_seconds = remaining_seconds % 60
     
     return Response({
         "message" : "Live Duration updated",
@@ -2122,8 +2128,8 @@ def set_up_live_duration_guest_car(request):
     except Guest.DoesNotExist:
         return Response({"message" :" car not found"},status=status.HTTP_404_NOT_FOUND)
     
-    if car.status != "bidding":
-        return Response({"message" : "car is not in Bidding yet"},status=status.HTTP_400_BAD_REQUEST)
+    # if car.status != "bidding":
+    #     return Response({"message" : "car is not in Bidding yet"},status=status.HTTP_400_BAD_REQUEST)
     
     if not car.bidding_end_time:
         return Response({"message" : "bidding has not started yet"},status=status.HTTP_400_BAD_REQUEST)
@@ -2141,20 +2147,22 @@ def set_up_live_duration_guest_car(request):
     
     car.bidding_end_time += delta
     
-    if car.bidding_end_time <= timezone.now():
-        car.status = "expired"
+    car.status = "bidding"
+    
+    # if car.bidding_end_time <= timezone.now():
+    #     car.status = "expired"
     car.save()
     
     remaining = car.bidding_end_time - timezone.now()
     
-    if car.status == "expired":
-        remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
-    else:
-        remaining_days = remaining.days
-        remaining_seconds = remaining.seconds
-        remaining_hours = remaining_seconds // 3600
-        remaining_minutes = (remaining_seconds % 3600) // 60
-        remaining_seconds = remaining_seconds % 60
+    # if car.status == "expired":
+    #     remaining_days = remaining_hours = remaining_minutes = remaining_seconds = 0
+    # else:
+    remaining_days = remaining.days
+    remaining_seconds = remaining.seconds
+    remaining_hours = remaining_seconds // 3600
+    remaining_minutes = (remaining_seconds % 3600) // 60
+    remaining_seconds = remaining_seconds % 60
     
     return Response({
         "message" : "Live Duration updated badi mushkill se",
@@ -4440,6 +4448,7 @@ def get_expired_cars(request):
         },
         status=200,
     )
+
 
 # get cars with status in-spection for dealer and admin (upcoming)
 @api_view(["GET"])
