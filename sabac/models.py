@@ -80,7 +80,7 @@ class saler_car_details(models.Model):
         null=True,
         blank=True,
         related_name="inspector_connected",
-    )  # New field
+    ) 
     winner_dealer = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -102,7 +102,7 @@ class saler_car_details(models.Model):
     primary_phone_number = models.CharField(max_length=15, null=True, blank=True)
     secondary_phone_number = models.CharField(max_length=15, null=True, blank=True)
     inspection_date = models.DateField(null=True, blank=True)
-    inspection_time = models.CharField(max_length=20 , null=True , blank=True) ##change 15/5/2025
+    inspection_time = models.CharField(max_length=20 , null=True , blank=True)
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="pending")
@@ -115,114 +115,6 @@ class saler_car_details(models.Model):
     demand= models.DecimalField(max_digits=60, decimal_places=2, null=True,blank=True)
     min_bid_amount  = models.DecimalField(max_digits=60,decimal_places=2,null=True,blank=True)
 
-
-
-    # def start_bidding(self):
-    #     self.bidding_start_time = timezone.now()
-    #     self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
-    #     self.save()
-
-    # def is_bidding_active(self):
-    #     now_time = timezone.now()
-    #     return (
-    #         self.bidding_start_time
-    #         and self.bidding_end_time
-    #         and self.bidding_start_time <= now_time <= self.bidding_end_time
-    #     )
-
-    
-    # def save(self, *args, **kwargs):
-    #     now_time = timezone.now()
-    #     was_expired = self.status == "expired"
-
-    #     # Mark sold
-    #     if self.status == "sold":
-    #         self.is_sold = True
-
-    #     # Auto-expire if bidding time passed
-    #     if (
-    #         self.status == "bidding"
-    #         and self.bidding_end_time
-    #         and now_time > self.bidding_end_time
-    #         and not self.is_sold
-    #     ):
-    #         self.status = "expired"
-
-    #     super().save(*args, **kwargs)
-        
-    #     # == send notofocation only when newly expires
-    #     if self.status == "expired" and not was_expired:
-    #         car_info = f"{self.company} {self.car_name} {self.car_variant}"
-            
-    #         # ====notify Owner=====
-    #         # if self.user:
-    #         #     message = f"Your {car_info} has been expired"
-                
-    #         #     Notification.objects.create(
-    #         #     recipient=self.user,
-    #         #     message=message,
-    #         #     saler_car=self,
-    #         #     category="seller_car_expired",
-    #         # )
-    #         # send_notification(
-    #         #     title="Car Expired",
-    #         #     body=message,
-    #         #     user=self.user,
-    #         # )
-            
-    #         # geting user model
-    #         from django.contrib.auth import get_user_model
-    #         User = get_user_model()
-            
-    #         # ===Notify dealers===
-    #         dealers = User.objects.filter(role="dealer")
-            
-    #         # sample message for dealer
-    #         message = f"The bidding period of {car_info} has been ended."
-            
-    #         for dealer in dealers:
-    #             Notification.objects.create(
-    #                 recipient=dealer,
-    #                 message = message,
-    #                 saler_car = self,
-    #                 category="dealer_car_expied"
-    #             )
-    #         # ===push notification Dealer ===
-    #             send_notification(title="Car Expired" , body=message , user=dealer,
-    #                 more_detail={
-    #                 "car_type": "seller",
-    #                 "car_id": str(self.saler_car_id),
-    #                 "car_name": self.car_name,
-    #                 "tab": "expire",
-    #             })
-    #             print(f"[✅ Dealer Notified] Dealer ID: {dealer.id} - {dealer.email} for Car: {car_info}")
-
-            
-    #         # ===notifiy Admin===
-            
-    #         # --get all admins from model--
-    #         admins = User.objects.filter(role="admin")
-            
-    #         # ---sample message--
-    #         message = f"{car_info} has been expired. No winning Bid"
-            
-    #         for admin in admins:
-    #             Notification.objects.create(
-    #                 recipient = admin,
-    #                 message = message,
-    #                 saler_car= self,
-    #                 category = "admin_car_expired" 
-    #             )
-    #             send_notification(title="Car Expired", body=message, user=admin,more_detail={
-    #                 "car_type": "seller",
-    #                 "car_id": str(self.saler_car_id),
-    #                 "car_name": self.car_name,
-    #                 "tab": "expire",
-    #             })
-    #             print(f"[✅ Admin Notified] Admin ID: {admin.id} - {admin.email} for Car: {car_info}")
-    
-    
-    # ✅ Utility: check if bidding still active
     def is_bidding_active(self):
         now_time = timezone.now()
         return (
@@ -231,7 +123,6 @@ class saler_car_details(models.Model):
             and self.bidding_start_time <= now_time <= self.bidding_end_time
         )
 
-    # ✅ 12-hour formatted properties for display
     @property
     def formatted_bidding_start(self):
         if self.bidding_start_time:
@@ -244,16 +135,13 @@ class saler_car_details(models.Model):
             return self.bidding_end_time.strftime("%I:%M %p, %d %b %Y")
         return None
 
-    # ✅ Save logic with expiry + notification
     def save(self, *args, **kwargs):
         now_time = timezone.now()
         was_expired = self.status == "expired"
 
-        # Auto mark sold flag
         if self.status == "sold":
             self.is_sold = True
 
-        # Auto mark expired if bidding ended
         if (
             self.status == "bidding"
             and self.bidding_end_time
@@ -264,11 +152,10 @@ class saler_car_details(models.Model):
 
         super().save(*args, **kwargs)
 
-        # ✅ Notify only when car newly becomes expired
+
         if self.status == "expired" and not was_expired:
             self._send_expiry_notifications()
 
-    # ✅ Private helper for notifications
     def _send_expiry_notifications(self):
         car_info = f"{self.company} {self.car_name} {self.car_variant or ''}".strip()
         from django.contrib.auth import get_user_model
@@ -277,7 +164,7 @@ class saler_car_details(models.Model):
         dealers = User.objects.filter(role="dealer")
         admins = User.objects.filter(role="admin")
 
-        # Message templates
+
         dealer_msg = f"The bidding period of {car_info} has ended."
         admin_msg = f"{car_info} bidding has ended with no winning bid."
 
@@ -300,7 +187,7 @@ class saler_car_details(models.Model):
                     "tab": "expire",
                 },
             )
-            print(f"[✅ Dealer Notified] Dealer ID: {dealer.id} - {dealer.email}")
+            # print(f"[✅ Dealer Notified] Dealer ID: {dealer.id} - {dealer.email}")
 
         # === Notify Admins ===
         for admin in admins:
@@ -321,16 +208,10 @@ class saler_car_details(models.Model):
                     "tab": "expire",
                 },
             )
-            print(f"[✅ Admin Notified] Admin ID: {admin.id} - {admin.email}")  
+            # print(f"[✅ Admin Notified] Admin ID: {admin.id} - {admin.email}")  
                 
                 
-            
-            
-    
-
-
-
-# GUEST with car detail model
+# ==========================GUEST with car detail model=======================================
 class Guest(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -386,11 +267,6 @@ class Guest(models.Model):
     min_bid_amount  = models.DecimalField(max_digits=60,decimal_places=2,null=True,blank=True)
 
 
-    # def start_bidding(self):
-    #     self.bidding_start_time = timezone.now()
-    #     self.bidding_end_time = self.bidding_start_time + timedelta(days=10)
-    #     self.save()
-
     def is_bidding_active(self):
         now_time = timezone.now()
         return (
@@ -422,22 +298,6 @@ class Guest(models.Model):
         if self.status == "expired" and not was_expired:
             car_info = f"{self.company} {self.car_name} {self.car_variant}"
             
-            # ====notify Owner=====
-            # if self.user:
-            #     message = f"Your {car_info} has been expired"
-                
-            #     Notification.objects.create(
-            #     recipient=self.user,
-            #     message=message,
-            #     saler_car=self,
-            #     category="seller_car_expired",
-            # )
-            # send_notification(
-            #     title="Car Expired",
-            #     body=message,
-            #     user=self.user,
-            # )
-            
             # geting user model
             from django.contrib.auth import get_user_model
             User = get_user_model()
@@ -452,7 +312,7 @@ class Guest(models.Model):
                 Notification.objects.create(
                     recipient=dealer,
                     message = message,
-                    saler_car = self,
+                    guest_car = self,
                     category="dealer_car_expied"
                 )
             # ===push notification Dealer ===
@@ -475,7 +335,7 @@ class Guest(models.Model):
                 Notification.objects.create(
                     recipient = admin,
                     message = message,
-                    saler_car= self,
+                    guest_car= self,
                     category = "admin_car_expired" 
                 )
                 send_notification(title="Car Expired", body=message, user=admin,more_detail={
@@ -484,9 +344,6 @@ class Guest(models.Model):
                     "car_name": self.car_name,
                     "tab": "expire",
                 })
-    
-    
-    
     
 
 # inspector availability model

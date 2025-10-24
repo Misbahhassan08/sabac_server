@@ -2108,9 +2108,9 @@ def set_up_live_duration(request):
 
 
 # bidding time setup set car Live duration for guest
-@api_view(["PUT"])
-@permission_classes([IsAuthenticated])
-def set_up_live_duration_guest_car(request):
+# @api_view(["PUT"])
+# @permission_classes([IsAuthenticated])
+# def set_up_live_duration_guest_car(request):
      # request data
     car_id = request.data.get("car_id")
     days = request.data.get("days",0)
@@ -2177,7 +2177,65 @@ def set_up_live_duration_guest_car(request):
         "status":car.status
     },status=status.HTTP_200_OK)
     
-        
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def set_up_live_duration_guest_car(request):
+    # Request data
+    car_id = request.data.get("car_id")
+    days = request.data.get("days", 0)
+    hours = request.data.get("hours", 0)
+    minutes = request.data.get("minutes", 0)
+    seconds = request.data.get("seconds", 0)
+
+    if not car_id:
+        return Response({"message": "car id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        car = Guest.objects.get(id=car_id)
+    except Guest.DoesNotExist:
+        return Response({"message": "car not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Convert duration inputs safely
+    try:
+        days = int(days)
+        hours = int(hours)
+        minutes = int(minutes)
+        seconds = int(seconds)
+    except ValueError:
+        return Response({"error": "Invalid duration values"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # If no previous end time exists, set it starting now
+    if not car.bidding_end_time:
+        car.bidding_end_time = timezone.now()
+
+    # Extend bidding duration
+    delta = timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    car.bidding_end_time += delta
+    car.status = "bidding"
+    car.save()
+
+    # Calculate remaining time
+    remaining = car.bidding_end_time - timezone.now()
+    remaining_days = remaining.days
+    remaining_seconds = remaining.seconds
+    remaining_hours = remaining_seconds // 3600
+    remaining_minutes = (remaining_seconds % 3600) // 60
+    remaining_seconds = remaining_seconds % 60
+
+    return Response({
+        "message": "Live Duration updated successfully",
+        "car_id": car.id,
+        "new_end_time": car.bidding_end_time,
+        "remaining_time": {
+            "days": remaining_days,
+            "hours": remaining_hours,
+            "minutes": remaining_minutes,
+            "seconds": remaining_seconds
+        },
+        "status": car.status
+    }, status=status.HTTP_200_OK)
+
+
 # dealer register
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])

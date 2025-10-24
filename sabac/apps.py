@@ -2,7 +2,7 @@ import sys
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
-from django.utils import timezone as dj_timezone  # ✅ renamed
+from django.utils import timezone as dj_timezone
 
 
 class SabacConfig(AppConfig):
@@ -83,16 +83,58 @@ class SabacConfig(AppConfig):
                         },
                     )
 
-                print(f"[✅ Auto-expired] Seller Car ID {car.saler_car_id} - {car_info}")
+                # print(f"[✅ Auto-expired] Seller Car ID {car.saler_car_id} - {car_info}")
 
             for car in expired_guests:
                 car.status = "expired"
                 car.save(update_fields=["status"])
-                print(f"[✅ Auto-expired] Guest Car ID {car.id} - {car.car_name}")
+                car_info = f"{car.company} {car.car_name} {car.car_variant or ''}".strip()
+
+                for admin in admins:
+                    message = f"{car_info} (Guest Listing) has expired — no winning bid."
+                    Notification.objects.create(
+                        recipient=admin,
+                        message=message,
+                        guest_car=car,
+                        category="admin_guest_expired",
+                    )
+                    send_notification(
+                        title="Guest Car Expired",
+                        body=message,
+                        user=admin,
+                        more_detail={
+                            "car_type": "guest",
+                            "car_id": str(car.id),
+                            "car_name": car.car_name,
+                            "tab": "expire",
+                        },
+                    )
+
+                for dealer in dealers:
+                    message = f"The bidding period for guest car {car_info} has ended."
+                    Notification.objects.create(
+                        recipient=dealer,
+                        message=message,
+                        guest_car=car, 
+                        category="dealer_guest_expired",
+                    )
+                    send_notification(
+                        title="Guest Car Expired",
+                        body=message,
+                        user=dealer,
+                        more_detail={
+                            "car_type": "guest",
+                            "car_id": str(car.id),
+                            "car_name": car.car_name,
+                            "tab": "expire",
+                        },
+                    )
+
+                # print(f"[✅ Auto-expired] Guest Car ID {car.id} - {car_info}")
 
             # print("✅ Expiry check completed.\n")
 
 
         scheduler.add_job(expire_cars_job, "interval", seconds=1, id="expire_cars_job", replace_existing=True)
         scheduler.start()
-        print("🚀 APScheduler started: Auto-expiring bidding cars every minute")
+        # print("🚀 APScheduler started: Auto-expiring bidding cars every minute")
