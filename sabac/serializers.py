@@ -65,6 +65,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
     #GUEST & CAR DETAIL SERIALIZER    
+
+
 class GuestSerializer(serializers.ModelSerializer):
     inspector_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role="inspector"),
@@ -79,6 +81,9 @@ class GuestSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    
+    inspection_report = serializers.SerializerMethodField()
+    
     class Meta:
         model = Guest
         fields = [
@@ -124,6 +129,7 @@ class GuestSerializer(serializers.ModelSerializer):
             "bidding_start_time",
             "bidding_end_time",
             "inspector",
+            "inspection_report"
         ]
 
     def get_inspector(self, obj):
@@ -142,6 +148,16 @@ class GuestSerializer(serializers.ModelSerializer):
             except ValueError:
                 raise serializers.ValidationError("Time must be in 12-hour format, e.g., '02:30 PM'.")
         return value
+    
+    def get_inspection_report(self, obj):
+        from .serializers import (
+            InspectionReportSerializer,  # ✅ import locally to avoid circular import
+        )
+        try:
+            report = obj.guest_inspection_reports  # related_name from your model (default: inspectionreport)
+            return InspectionReportSerializer(report).data
+        except InspectionReport.DoesNotExist:
+            return None
         
   
 
@@ -169,6 +185,8 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
     )
     inspection_time = serializers.CharField(required=False, allow_null=True)
     inspection_date = serializers.DateField(required=False, allow_null=True)  
+    
+    inspection_report = serializers.SerializerMethodField()
 
 
     class Meta:
@@ -203,6 +221,7 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             "is_sold",
             "photos",
             "inspector",
+            "inspection_report",
             "seller",
         ]
         read_only_fields = ["status", "is_sold"]
@@ -214,6 +233,18 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
             except ValueError:
                 raise serializers.ValidationError("Time must be in 12-hour format (e.g., 02:30 PM)")
         return value
+    
+    def get_inspection_report(self, obj):
+        from .serializers import (
+            InspectionReportSerializer,  # ✅ import locally to avoid circular import
+        )
+        try:
+            report = obj.inspection_reports  # related_name from your model (default: inspectionreport)
+            return InspectionReportSerializer(report).data
+        except InspectionReport.DoesNotExist:
+            return None
+    
+    
 
 
 # inspector Availability
