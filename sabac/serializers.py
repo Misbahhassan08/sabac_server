@@ -118,6 +118,7 @@ class GuestSerializer(serializers.ModelSerializer):
             "demand",
             "created_at",
             "updated_at",
+            "inspection_report"
         ]
         read_only_fields = [
             "id",
@@ -150,14 +151,17 @@ class GuestSerializer(serializers.ModelSerializer):
         return value
     
     def get_inspection_report(self, obj):
-        from .serializers import (
-            InspectionReportSerializer,  # ✅ import locally to avoid circular import
-        )
-        try:
-            report = obj.guest_inspection_reports  # related_name from your model (default: inspectionreport)
-            return InspectionReportSerializer(report).data
-        except InspectionReport.DoesNotExist:
-            return None
+        from .models import InspectionReport
+        from .serializers import InspectionReportSerializer
+        report = InspectionReport.objects.filter(guest_car=obj).first()
+        
+        if report and report.image_urls:
+            main_images = [
+                url for url in report.image_urls
+                if "sabac-inspectionimages-main" in url
+            ]
+            return main_images
+        return []
         
   
 
@@ -174,12 +178,16 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), allow_null=True, required=False
     )
+    
     is_sold = serializers.BooleanField(read_only=True)
+    
     added_by = serializers.CharField(required=False, allow_blank=True)
+    
     inspector = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(role="inspector"), allow_null=True, required=False
     )
     seller = UserSerializer(source="user", read_only=True)
+    
     photos = serializers.ListField(
         child=serializers.URLField(), allow_null=True, required=False
     )
@@ -235,14 +243,17 @@ class SalerCarDetailsSerializer(serializers.ModelSerializer):
         return value
     
     def get_inspection_report(self, obj):
-        from .serializers import (
-            InspectionReportSerializer,  # ✅ import locally to avoid circular import
-        )
-        try:
-            report = obj.inspection_reports  # related_name from your model (default: inspectionreport)
-            return InspectionReportSerializer(report).data
-        except InspectionReport.DoesNotExist:
-            return None
+        from .models import InspectionReport
+
+        # from .serializers import InspectionReportSerializer
+        report = InspectionReport.objects.filter(saler_car=obj).first() # fetch the only report
+        if report and report.image_urls:
+            main_images = [
+                url for url in report.image_urls
+                if "sabac-inspectionimages-main" in url
+            ]
+            return main_images
+        return []
     
     
 
@@ -284,8 +295,8 @@ class InspectionReportSerializer(serializers.ModelSerializer):
         child=serializers.URLField(), required=False, allow_null=True
     )
     
-    saler_car = SalerCarDetailsSerializer(read_only=True)
-    guest_car = GuestSerializer(read_only=True)
+    # saler_car = SalerCarDetailsSerializer(read_only=True)
+    # guest_car = GuestSerializer(read_only=True)
 
     # bidding_start_time = serializers.SerializerMethodField()
     # bidding_end_time = serializers.SerializerMethodField()
