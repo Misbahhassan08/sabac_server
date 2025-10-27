@@ -312,6 +312,7 @@ def google_register_login(request):
             "success": True,
             "access_token": access,
             "refresh_token": str(refresh),
+            "device_id": device_id,
             "user": {
                 "id": user.id,
                 "username": user.username,
@@ -323,6 +324,32 @@ def google_register_login(request):
 
     except Exception as e:
         return Response({"success": False, "message": str(e)}, status=500)
+
+
+
+# GOOGLE LOGOUT
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def google_logout(request):
+    try:
+        refresh_token = request.data.get("refresh_token")
+        if not refresh_token:
+            return Response({"success": False, "message": "Refresh token required"}, status=400)
+
+        token = RefreshToken(refresh_token)
+        token.blacklist()  # ✅ This makes the token invalid
+
+        # Optionally, remove from DeviceToken table if you use it
+        device_id = request.data.get("device_id")
+        if device_id:
+            DeviceToken.objects.filter(user=request.user, device_id=device_id).delete()
+
+        return Response({"success": True, "message": "Logged out successfully"}, status=200)
+
+    except Exception as e:
+        return Response({"success": False, "message": str(e)}, status=500)
+
+
 
 # refreshing the access token
 class CustomRefreshTokenView(TokenRefreshView):
@@ -547,6 +574,7 @@ def get_car_for_inventory(request):
 def get_seller_sold_cars(request):
     try:
         cars = saler_car_details.objects.filter(status="sold", is_sold=True)
+        
         data = []
 
         for car in cars:
@@ -560,6 +588,16 @@ def get_seller_sold_cars(request):
                 ).order_by("-bid_amount").first()
                 if bid:
                     sold_bid = bid.bid_amount
+            
+            report = InspectionReport.objects.filter(saler_car=car).first()
+            main_images = []
+            if report and report.image_urls:
+                main_images = [
+                    url for url in report.image_urls
+                    if "inspectionimages-main" in url.lower()
+                ]
+            
+            
 
             data.append({
                 "car_id": car.saler_car_id,
@@ -572,6 +610,7 @@ def get_seller_sold_cars(request):
                 "photos": car.photos,
                 "status": car.status,
                 "is_sold": car.is_sold,
+                "inspection_report":main_images,
                 "owner": {
                     "first_name": car.user.first_name,
                     "last_name": car.user.last_name,
@@ -619,6 +658,14 @@ def get_guest_sold_cars(request):
                 ).order_by("-bid_amount").first()
                 if bid:
                     sold_bid = bid.bid_amount
+            report = InspectionReport.objects.filter(guest_car=car).first()
+            
+            main_images = []
+            if report and report.image_urls:
+                main_images = [
+                    url for url in report.image_urls
+                    if "inspectionimages-main" in url.lower()
+                ]
 
             data.append({
                 "car_id": car.id,
@@ -631,6 +678,7 @@ def get_guest_sold_cars(request):
                 "photos": car.photos,
                 "status": car.status,
                 "is_sold": car.is_sold,
+                "inspection_report":main_images,
                 "owner":{
                     "name":car.name,
                     "number":car.number
@@ -3256,7 +3304,7 @@ def inspector_appointments(request):
             )
 
         appointments = saler_car_details.objects.filter(
-            inspector=user, user__isnull=False, is_manual=False
+            inspector=user, user__isnull=False, is_manual=False,status__in=["pending", "assigned"]
         ).order_by("inspection_date", "inspection_time")
 
         if not appointments.exists():
@@ -4973,7 +5021,7 @@ def get_inspector_appointmnet_by_guest(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        guest_cars = Guest.objects.filter(inspector_id=inspector.id, is_manual=False)
+        guest_cars = Guest.objects.filter(inspector_id=inspector.id, is_manual=False,status__in=["pending", "assigned"])
 
         serializer = GuestSerializer(guest_cars, many=True)
         return Response(
