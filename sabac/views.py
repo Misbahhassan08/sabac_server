@@ -4361,7 +4361,7 @@ def get_inspection_report(request):
         
         
         return Response({"report":serializer.data,
-                         "saler_car":car_serializer}, status=status.HTTP_200_OK)
+                         "saler_car":car_serializer.data}, status=status.HTTP_200_OK)
     
     except InspectionReport.DoesNotExist:
         return Response(
@@ -5389,7 +5389,7 @@ def get_inspection_report_guest(request):
         car_serializer = GuestSerializer(car)
         
         
-        return Response({"report":serializer.data,"guest_car":car_serializer}, status=status.HTTP_200_OK)
+        return Response({"report":serializer.data,"guest_car":car_serializer.data}, status=status.HTTP_200_OK)
     
     
     except InspectionReport.DoesNotExist:
