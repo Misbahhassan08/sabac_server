@@ -4353,15 +4353,12 @@ def get_inspection_report(request):
         report = InspectionReport.objects.get(saler_car=car_id)
         serializer = InspectionReportSerializer(report)
         
-          # Fetch related car details
-        car = report.saler_car  # assuming ForeignKey relation to saler_car_details
-        # from .serializers import SalerCarDetailsSerializer  # import if not already
-        car_serializer = SalerCarDetailsSerializer(car)
+
         
         
         
-        return Response({"report":serializer.data,
-                         "saler_car":car_serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.data,
+                          status=status.HTTP_200_OK)
     
     except InspectionReport.DoesNotExist:
         return Response(
@@ -5384,12 +5381,10 @@ def get_inspection_report_guest(request):
         
         report = InspectionReport.objects.get(guest_car=car_id)
         serializer = InspectionReportSerializer(report)
-        
-        car = report.guest_car
-        car_serializer = GuestSerializer(car)
+
         
         
-        return Response({"report":serializer.data,"guest_car":car_serializer.data}, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     
     except InspectionReport.DoesNotExist:

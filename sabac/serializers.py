@@ -295,11 +295,11 @@ class InspectionReportSerializer(serializers.ModelSerializer):
         child=serializers.URLField(), required=False, allow_null=True
     )
     
-    # saler_car = SalerCarDetailsSerializer(read_only=True)
-    # guest_car = GuestSerializer(read_only=True)
+    saler_car = SalerCarDetailsSerializer(read_only=True)
+    guest_car = GuestSerializer(read_only=True)
 
-    # bidding_start_time = serializers.SerializerMethodField()
-    # bidding_end_time = serializers.SerializerMethodField()
+    bidding_start_time = serializers.SerializerMethodField()
+    bidding_end_time = serializers.SerializerMethodField()
 
     class Meta:
         model = InspectionReport
